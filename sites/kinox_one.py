@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import re
 from resources.lib import logger
 from resources.lib.gui.gui import cGui
 from resources.lib.gui.guiElement import cGuiElement
@@ -10,7 +9,6 @@ from resources.lib.parser import cParser
 SITE_IDENTIFIER = 'kinox_one'
 SITE_NAME = 'KINOX.ONE'
 SITE_ICON = 'kinox_one.png'
-SITE_GLOBAL_SEARCH = False
 
 URL_MAIN = 'http://kinox.one'
 URL_FILME = URL_MAIN + '/movies/'
@@ -49,7 +47,7 @@ def showGenre():
     oGui.setEndOfDirectory()
 
 
-def showEntries(entryUrl=False, sGui=False, sSearchText=None):
+def showEntries(entryUrl=False, sGui=False, sSearchText=False):
     oGui = sGui if sGui else cGui()
     params = ParameterHandler()
     if not entryUrl: entryUrl = params.getValue('sUrl')
@@ -61,8 +59,7 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=None):
         oRequest.addParameters('subaction', 'search')  
         oRequest.setRequestType(1)
     sHtmlContent = oRequest.request()
-
-    pattern = '<a[^>]href="([^"]+)"><div.*?<img[^>]src="([^"]+).*?<div[^>]class="tiitle">([^<]+).*?<div[^>]class="shortttt">([^<]+)'
+    pattern = '<a[^>]href="([^"]+)"><div.*?<img[^>]src="([^"]+).*?<div[^>]class="tiitle">([^<]+).*?<div[^>]class="shortttt">.*?([\d]+)'
     isMatch, aResult = cParser().parse(sHtmlContent, pattern)
 
     if not isMatch:
@@ -71,10 +68,8 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=None):
 
     total = len(aResult)
     for sUrl, sThumbnail, sName, sYear in aResult:
-        sYear = re.compile("([0-9]{4})").findall(sYear)
-        for year in sYear:
-            sYear = year
-            break
+        if sSearchText and not cParser().search(sSearchText, sName):
+            continue
         isTvshow = True if "staffel" in sName.lower() else False
         oGuiElement = cGuiElement(sName, SITE_IDENTIFIER, 'showEpisodes' if isTvshow else 'showHosters')
         oGuiElement.setMediaType('tvshow' if isTvshow else 'movie')
@@ -100,7 +95,6 @@ def showEpisodes():
     oRequest = cRequestHandler(sUrl)
     oRequest.addHeaderEntry('Upgrade-Insecure-Requests', '1')
     sHtmlContent = oRequest.request()
-    
     pattern = 'data-title="([^"]+).*?data-url="([^"]+)'
     isMatch, aResult = cParser.parse(sHtmlContent, pattern)
     if not isMatch:
@@ -134,13 +128,12 @@ def showHosters():
     oRequest = cRequestHandler(sUrl)
     oRequest.addHeaderEntry('Upgrade-Insecure-Requests', '1')
     sHtmlContent = oRequest.request()
-    sPattern = '"[^>]href="([^"]+)" target'
-    isMatch, aResult = cParser().parse(sHtmlContent, sPattern)
-
+    pattern = 'data-url="([^"]+)"[^>]></li>'
+    isMatch, aResult = cParser().parse(sHtmlContent, pattern)
     hosters = []
     if isMatch:
         for sUrl in aResult:
-            hoster = {'link': sUrl, 'name': 'Kinox.one'}
+            hoster = {'link': sUrl, 'name': 'kinox.one'}
             hosters.append(hoster)
     if hosters:
         hosters.append('getHosterUrl')
@@ -150,4 +143,4 @@ def showHosters():
 def getHosterUrl(sUrl=False):
     if not sUrl:
         sUrl = ParameterHandler().getValue('sUrl')
-    return [{'streamUrl': sUrl, 'resolved': True}]
+    return [{'streamUrl': sUrl.replace(' ','%20'), 'resolved': True}]
