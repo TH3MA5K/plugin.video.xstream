@@ -49,7 +49,7 @@ def showValue():
     oGui.setEndOfDirectory()
 
 
-def showEntries(entryUrl=False, sGui=False):
+def showEntries(entryUrl=False, sGui=False, sSearchText=False):
     oGui = sGui if sGui else cGui()
     params = ParameterHandler()
     if not entryUrl: entryUrl = params.getValue('sUrl')
@@ -73,6 +73,8 @@ def showEntries(entryUrl=False, sGui=False):
 
     total = len(aResult)
     for sThumbnail, sUrl, sName, sYear, sDesc in aResult:
+        if sSearchText and not cParser().search(sSearchText, sName):
+            continue
         sThumbnail = cParser.replace('-\d+x\d+\.', '.', sThumbnail)
         isTvshow = True if "tvshow" in sUrl else False
         oGuiElement = cGuiElement(sName, SITE_IDENTIFIER, 'showSeasons' if isTvshow else 'showHosters')
@@ -197,4 +199,4 @@ def showSearch():
 
 def _search(oGui, sSearchText):
     if not sSearchText: return
-    showEntries(URL_SEARCH % sSearchText.strip(), oGui)
+    showEntries(URL_SEARCH % sSearchText.strip(), oGui, sSearchText)
