@@ -170,10 +170,10 @@ def showSearch():
 
 def _search(oGui, sSearchText):
     if not sSearchText: return
-    showSearchEntries(URL_SEARCH % sSearchText.strip(), oGui)
+    showSearchEntries(URL_SEARCH % sSearchText.strip(), oGui, sSearchText)
 
 
-def showSearchEntries(entryUrl=False, sGui=False):
+def showSearchEntries(entryUrl=False, sGui=False, sSearchText=False):
     oGui = sGui if sGui else cGui()
     params = ParameterHandler()
     if not entryUrl: entryUrl = params.getValue('sUrl')
@@ -191,6 +191,8 @@ def showSearchEntries(entryUrl=False, sGui=False):
         return
     total = len(aResult)
     for sName, sUrl in aResult:
+        if sSearchText and not cParser().search(sSearchText, sName):
+            continue
         isMatch, sYear = cParser.parse(sName, "(.*?)\((\d*)\)")
         for name, year in sYear:
             sName = name
@@ -273,4 +275,3 @@ def createUrl(sUrl, oRequest):
         delimiter = '&' if '|' in sUrl else '|'
         sUrl += delimiter + "User-Agent=" + oRequest.getHeaderEntry('User-Agent')
     return sUrl
-   
