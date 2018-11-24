@@ -11,7 +11,7 @@ SITE_IDENTIFIER = 'alleserien_com'
 SITE_NAME = 'Alleserien.com'
 SITE_ICON = 'alleserien_com.png'
 
-URL_MAIN = 'https://alleserien.com'
+URL_MAIN = 'http://alleserien.com'
 URL_SERIEN = URL_MAIN + '/serien'
 URL_FILME = URL_MAIN + '/filme'
 URL_SEARCH = URL_MAIN + '/search?page=1&from=1900&to=2018&type=Alle&rating=0&sortBy=latest&search=%s'
@@ -69,7 +69,7 @@ def showGenre():
     oGui.setEndOfDirectory()
 
 
-def showEntries(entryUrl=False, sGui=False, sSearchText=None):
+def showEntries(entryUrl=False, sGui=False, sSearchText=False):
     import time
     oGui = sGui if sGui else cGui()
     params = ParameterHandler()
@@ -105,6 +105,8 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=None):
 
     total = len(aResult)
     for sName, sUrl, sThumbnail in aResult:
+        if sSearchText and not cParser().search(sSearchText, sName):
+            continue
         isTvshow = True if 'folge' in sUrl else False
         sThumbnail = sThumbnail.replace('\/', '/')
         sThumbnail = cCFScrape.createUrl(sThumbnail, oRequest)
