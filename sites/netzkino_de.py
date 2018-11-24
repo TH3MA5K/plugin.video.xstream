@@ -56,7 +56,7 @@ def load():
     oGui.setEndOfDirectory()
 
 
-def showEntries(entryUrl=False, sGui=False):
+def showEntries(entryUrl=False, sGui=False, sSearchText=False):
     oGui = sGui if sGui else cGui()
     params = ParameterHandler()
     if not entryUrl: entryUrl = params.getValue('sUrl')
@@ -79,6 +79,9 @@ def showEntries(entryUrl=False, sGui=False):
             FSK = ','.join(item['custom_fields']['FSK'])
             if not isShowAdult and '18' in FSK.lower():
                 continue
+            if sSearchText and not cParser().search(sSearchText, item['title'].encode('utf-8', 'ignore')):
+                continue
+
             oGuiElement = cGuiElement(item['title'].encode('utf-8', 'ignore'), SITE_IDENTIFIER, 'getHosterUrl')
             oGuiElement.setThumbnail(item['thumbnail'].encode('utf-8', 'ignore'))
             sFanart = ','.join(item['custom_fields']['featured_img_all'])
@@ -116,8 +119,7 @@ def showSearch():
 
 def _search(oGui, sSearchText):
     if not sSearchText: return
-    showEntries(URL_SEARCH % sSearchText.strip(), oGui)
-
+    showEntries(URL_SEARCH % sSearchText.strip(), oGui, sSearchText)
 
 def showAdult():
     oConfig = cConfig()
