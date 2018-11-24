@@ -1,4 +1,7 @@
 xStream 3.5.3~nightly:
+- [cinenator] Add Search filter
+- [hd-streams.org] Add Search filter
+- [netzkino_de] Add Search filter
 - [kinox.one] fix hoster
 - [parser] add re.search
 - [Alleserien.com] Suche hinzugefügt
