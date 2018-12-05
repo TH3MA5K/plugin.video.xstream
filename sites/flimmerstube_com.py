@@ -49,7 +49,6 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=None):
     oGui = sGui if sGui else cGui()
     params = ParameterHandler()
     if not entryUrl: entryUrl = params.getValue('sUrl')
-
     oRequest = cRequestHandler(entryUrl, ignoreErrors=(sGui is not False))
     if sSearchText:
         oRequest.addParameters('query', sSearchText)
@@ -85,8 +84,8 @@ def showHosters():
     oParams = ParameterHandler()
     sUrl = oParams.getValue('entryUrl')
     sHtmlContent = cRequestHandler(sUrl).request()
-    sPattern = 'src=[^>]"([^"]+)"\s'
-    aResult = cParser().parse(sHtmlContent, sPattern)
+    pattern = "src=[^>]'([^']+)'\s"
+    aResult = cParser().parse(sHtmlContent, pattern)
     hosters = []
     if aResult[1]:
         for sUrl in aResult[1]:
@@ -98,7 +97,6 @@ def showHosters():
 
 
 def getHosterUrl(sUrl=False):
-    if not sUrl: sUrl = ParameterHandler().getValue('url')
     return [{'streamUrl': sUrl, 'resolved': False}]
 
 
