@@ -1,4 +1,6 @@
 xStream 3.5.3~nightly:
+- [HDfilme] neu geschrieben
+- [flimmerstube] fix hoster tnx anonymous
 - [alleserien.com] Add Search filter
 - [cinenator] Add Search filter
 - [hd-streams.org] Add Search filter
