@@ -23,6 +23,7 @@
    <platform>all</platform>
    <news>
    xStream 3.5.3~nightly
+    - [watchbox.de] Add Search filter
     - [tmovie.to] Add Site
     - [streamit.ws] fix Serien
     - [xStream] Größe aller cover reduziert
