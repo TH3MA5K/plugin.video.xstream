@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import re
 from resources.lib import logger
 from resources.lib.gui.gui import cGui
 from resources.lib.gui.guiElement import cGuiElement
@@ -10,7 +9,6 @@ from resources.lib.parser import cParser
 SITE_IDENTIFIER = 'watchbox_de'
 SITE_NAME = 'WatchBox.de'
 SITE_ICON = 'watchbox_de.png'
-SITE_GLOBAL_SEARCH = False
 
 URL_MAIN = 'https://www.watchbox.de'
 URL_NEUE_FILME = URL_MAIN + '/filme/neu/'
@@ -40,12 +38,13 @@ def showGenres():
     params = ParameterHandler()
     valueType = params.getValue('valueType')
     sHtmlContent = cRequestHandler(URL_GENRES).request()
-    sPattern = '<a[^>]class="genre-teaser"[^>]href="([^"]+).*?title">([^<]+)'
-    isMatch, aResult = cParser.parse(sHtmlContent, sPattern)
+    pattern = '<a[^>]class="genre-teaser"[^>]href="([^"]+).*?title">([^<]+)'
+    isMatch, aResult = cParser.parse(sHtmlContent, pattern)
 
     if not isMatch:
         oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
         return
+
     for sUrl, sName in aResult:
         params.setParam('sUrl', URL_MAIN + sUrl + valueType)
         oGui.addFolder(cGuiElement(sName, SITE_IDENTIFIER, 'showEntries'), params)
@@ -57,8 +56,8 @@ def showEntries(entryUrl=False, sGui=False):
     params = ParameterHandler()
     if not entryUrl: entryUrl = params.getValue('sUrl')
     sHtmlContent = cRequestHandler(entryUrl, ignoreErrors=(sGui is not False)).request()
-    sPattern = 'data-asset-title="([^"]+).*?href="([^"]+)">.*?src="([^"]+).*?<div[^>]class="text_teaser-portrait-meta">([^<]+).*?description">([^<]+)'
-    isMatch, aResult = cParser.parse(sHtmlContent, sPattern)
+    pattern = 'data-asset-title="([^"]+).*?href="([^"]+)">.*?src="([^"]+).*?<div[^>]class="text_teaser-portrait-meta">([^<]+).*?description">([^<]+)'
+    isMatch, aResult = cParser.parse(sHtmlContent, pattern)
 
     if not isMatch:
         if not sGui: oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
@@ -66,26 +65,23 @@ def showEntries(entryUrl=False, sGui=False):
 
     total = len(aResult)
     for sName, sUrl, sThumbnail, sYear, sDesc in aResult:
-        try:
-            isTvshow = True if "serien" in sUrl else False
-            if sThumbnail and sThumbnail.startswith('/'):
-                sThumbnail = 'http:' + sThumbnail
-            Year = re.compile('(\d{4})', flags=re.I | re.M).findall(sYear)[0]
-            oGuiElement = cGuiElement(sName, SITE_IDENTIFIER, 'showSeasons' if isTvshow else 'getHosterUrl')
-            oGuiElement.setMediaType('tvshow' if isTvshow else 'movie')
-            oGuiElement.setThumbnail(sThumbnail)
-            oGuiElement.setFanart(sThumbnail)
-            oGuiElement.setYear(Year)
-            oGuiElement.setDescription(sDesc)
-            params.setParam('sThumbnail', sThumbnail)
-            params.setParam('entryUrl', URL_MAIN + sUrl)
-            params.setParam('sName', sName)
-            oGui.addFolder(oGuiElement, params, isTvshow, total)
-        except:
-            pass
+        isTvshow = True if "serien" in sUrl else False
+        if sThumbnail.startswith('/'):
+            sThumbnail = 'https:' + sThumbnail
+        isYear, Year = cParser.parseSingleResult(sYear, '(\d{4})')
+        oGuiElement = cGuiElement(sName, SITE_IDENTIFIER, 'showSeasons' if isTvshow else 'getHosterUrl')
+        oGuiElement.setMediaType('tvshow' if isTvshow else 'movie')
+        oGuiElement.setThumbnail(sThumbnail)
+        oGuiElement.setFanart(sThumbnail)
+        oGuiElement.setYear(Year)
+        oGuiElement.setDescription(sDesc)
+        params.setParam('sThumbnail', sThumbnail)
+        params.setParam('entryUrl', URL_MAIN + sUrl)
+        params.setParam('sName', sName)
+        oGui.addFolder(oGuiElement, params, isTvshow, total)
     if not sGui:
-        sPattern = '><link[^>]*href="([^"]+)"[^>]*rel="next"'
-        isMatchNextPage, sNextUrl = cParser.parseSingleResult(sHtmlContent, sPattern)
+        pattern = '><link[^>]*href="([^"]+)"[^>]*rel="next"'
+        isMatchNextPage, sNextUrl = cParser.parseSingleResult(sHtmlContent, pattern)
         if isMatchNextPage:
             params.setParam('sUrl', sNextUrl)
             oGui.addNextPage(SITE_IDENTIFIER, 'showEntries', params)
@@ -113,8 +109,7 @@ def showSeasons():
         oGuiElement.setMediaType('season')
         oGuiElement.setTVShowTitle(sTVShowTitle)
         oGuiElement.setSeason(sSeasonNr)
-        if sThumbnail:
-            oGuiElement.setThumbnail(sThumbnail)
+        oGuiElement.setThumbnail(sThumbnail)
         params.setParam('sSeasonNr', int(sSeasonNr))
         params.setParam('entryUrl', URL_MAIN + sSeasonUrl)
         oGui.addFolder(oGuiElement, params, True, total)
@@ -161,18 +156,17 @@ def showSearch():
 
 
 def _search(oGui, sSearchText):
-    if not sSearchText: return
-    showSearchEntries(URL_SEARCH % sSearchText.strip(), oGui)
+    showSearchEntries(URL_SEARCH % sSearchText, oGui, sSearchText)
 
 
-def showSearchEntries(entryUrl=False, sGui=False):
+def showSearchEntries(entryUrl=False, sGui=False, sSearchText=False):
     oGui = sGui if sGui else cGui()
     params = ParameterHandler()
     if not entryUrl: entryUrl = params.getValue('sUrl')
     oRequest = cRequestHandler(entryUrl, ignoreErrors=(sGui is not False))
     sHtmlContent = oRequest.request()
-    sPattern = 'type":"([^"]+).*?entityId":([\d]+).*?headline":"([^"]+).*?description":"([^"]+).*?productionYear":"([^"]+).*?seoPath":"([^"]+)'
-    isMatch, aResult = cParser.parse(sHtmlContent, sPattern)
+    pattern = 'type":"([^"]+).*?entityId":([\d]+).*?headline":"([^"]+).*?description":"([^"]+).*?productionYear":"([^"]+).*?seoPath":"([^"]+)'
+    isMatch, aResult = cParser.parse(sHtmlContent, pattern)
 
     if not isMatch:
         if not sGui: oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
@@ -180,6 +174,8 @@ def showSearchEntries(entryUrl=False, sGui=False):
 
     total = len(aResult)
     for sType, sId, sName, sDesc, sYear, sUrl in aResult:
+        if sSearchText and not cParser().search(sSearchText, sName):
+            continue
         isTvshow = True if "serie" in sType else False
         oGuiElement = cGuiElement(sName, SITE_IDENTIFIER, 'showSeasons' if isTvshow else 'getHosterUrl')
         oGuiElement.setMediaType('tvshow' if isTvshow else 'movie')
