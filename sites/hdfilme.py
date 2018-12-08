@@ -218,7 +218,10 @@ def showHosters():
 
 
 def getHosterUrl(sUrl=False):
-    return [{'streamUrl': sUrl, 'resolved': False}]
+    if 'googleapis' in sUrl:
+        return [{'streamUrl': sUrl, 'resolved': True}]
+    else:
+        return [{'streamUrl': sUrl, 'resolved': False}]
 
 
 def showSearch():
@@ -230,7 +233,7 @@ def showSearch():
 
 
 def _search(oGui, sSearchText):
-    showEntries(URL_SEARCH % sSearchText.strip(), oGui, sSearchText)
+    showEntries(URL_SEARCH % sSearchText, oGui, sSearchText)
 
 
 def createUrl(sUrl, oRequest):
