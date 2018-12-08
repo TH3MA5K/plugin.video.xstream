@@ -135,10 +135,13 @@ def showHosters():
             sHtmlContent = oRequest.request()
             sPattern = '"([^"]+)"'
             isMatch, sUrl = cParser().parseSingleResult(sHtmlContent, sPattern)
-            if not 'http' in sUrl:
-                sUrl = 'http:' + sUrl
-            isMatch, hname = cParser().parseSingleResult(sUrl, '^(?:https?://)?(?:[^@\n]+@)?([^:/\n]+)')
-             hoster = {'link': sUrl, 'name': hname}
+            try:
+                if not 'http' in sUrl:
+                    sUrl = 'http:' + sUrl
+                isMatch, hname = cParser().parseSingleResult(sUrl, '^(?:https?://)?(?:[^@\n]+@)?([^:/\n]+)')
+            except:
+                pass
+            hoster = {'link': sUrl, 'name': hname}
             hosters.append(hoster)
     if hosters:
         hosters.append('getHosterUrl')
