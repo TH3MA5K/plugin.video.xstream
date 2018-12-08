@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import re
 from resources.lib import logger
 from resources.lib.gui.gui import cGui
 from resources.lib.gui.guiElement import cGuiElement
@@ -44,13 +43,15 @@ def showGenre():
     params = ParameterHandler()
     entryUrl = params.getValue('sUrl')
     sHtmlContent = cRequestHandler(entryUrl).request()
-    isMatch, aResult = cParser().parse(sHtmlContent, 'id="categories.*?class="clear">')
+    isMatch, sContainer = cParser.parseSingleResult(sHtmlContent, 'id="categories.*?class="clear">')
 
     if isMatch:
-        sHtmlContent = aResult[0]
+        pattern = '<a[^>]href="([^"]+)"[^>]*>([^<]+)</a>([^<]+)'
+        isMatch, aResult = cParser.parse(sContainer, pattern)
 
-    pattern = '<a[^>]href="([^"]+)"[^>]*>([^<]+)</a>([^<]+)'
-    isMatch, aResult = cParser().parse(sHtmlContent, pattern)
+    if not isMatch:
+        oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
+        return
 
     for sUrl, sTitle, Nr in aResult:
         params.setParam('sUrl', URL_MAIN + sUrl)
@@ -110,25 +111,26 @@ def showSeasons():
     sThumbnail = params.getValue("Thumbnail")
     sName = params.getValue('sName')
     sHtmlContent = cRequestHandler(sUrl).request()
-    sPattern = '<select[^>]*class="staffelauswahl"[^>]*>(.*?)</select>'  # container
-    isMatch, strContainer = cParser().parseSingleResult(sHtmlContent, sPattern)
+    pattern = '<select[^>]*class="staffelauswahl"[^>]*>(.*?)</select>'  # container
+    isMatch, strContainer = cParser().parseSingleResult(sHtmlContent, pattern)
 
     if isMatch:
-        sPattern = '<option[^>]*value="(.*?)"[^>]*>(.*?)</option>'  # container
-        isMatch, aResult = cParser().parse(strContainer, sPattern)
+        pattern = 'value=([\d]+)'
+        isMatch, aResult = cParser().parse(strContainer, pattern)
 
     if not isMatch:
         oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
         return
 
     total = len(aResult)
-    for iSeason, sTitle in aResult:
-        oGuiElement = cGuiElement("Staffel " + str(iSeason), SITE_IDENTIFIER, 'showEpisodes')
+    for sSeason in aResult:
+        oGuiElement = cGuiElement("Staffel " + sSeason, SITE_IDENTIFIER, 'showEpisodes')
         oGuiElement.setTVShowTitle(sName)
-        oGuiElement.setSeason(iSeason)
+        oGuiElement.setSeason(sSeason)
         oGuiElement.setMediaType('season')
         oGuiElement.setThumbnail(sThumbnail)
         oGuiElement.setFanart(sThumbnail)
+        params.setParam('season', sSeason)
         oGui.addFolder(oGuiElement, params, True, total)
     oGui.setView('seasons')
     oGui.setEndOfDirectory()
@@ -140,10 +142,9 @@ def showEpisodes():
     sUrl = params.getValue('entryUrl')
     sThumbnail = params.getValue("Thumbnail")
     sSeason = params.getValue('season')
-    sShowName = params.getValue('TVShowTitle')
     sHtmlContent = cRequestHandler(sUrl).request()
-    sPattern = '<a[^>]*href="#(s%se(\d+))"[^>]*>(.*?)</a>' % sSeason
-    isMatch, aResult = cParser().parse(sHtmlContent, sPattern)
+    pattern = "href='#s%se([\d]+)" % sSeason
+    isMatch, aResult = cParser().parse(sHtmlContent, pattern)
 
     if not isMatch:
         oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
@@ -152,19 +153,14 @@ def showEpisodes():
     result, imdb = cParser().parseSingleResult(sHtmlContent, 'IMDB\s?=\s?\'(\d+)')
 
     total = len(aResult)
-    for sEpisodeUrl, sEpisodeNr, sEpisodeTitle in aResult:
-        res = re.search('%s (.*)' % sEpisodeNr, sEpisodeTitle)
-        if res:
-            sEpisodeTitle = '%s - %s' % (sEpisodeNr, res.group(1))
-        oGuiElement = cGuiElement(sEpisodeTitle, SITE_IDENTIFIER, "showHosters")
+    for sEpisodeNr in aResult:
+        oGuiElement = cGuiElement('Folge ' + sEpisodeNr, SITE_IDENTIFIER, "showHosters")
         oGuiElement.setThumbnail(sThumbnail)
         oGuiElement.setFanart(sThumbnail)
-        oGuiElement.setTVShowTitle(sShowName)
         oGuiElement.setEpisode(sEpisodeNr)
         oGuiElement.setSeason(sSeason)
         oGuiElement.setMediaType('episode')
-        params.setParam('entryUrl', sUrl)
-        params.setParam('val', sEpisodeUrl)
+        params.setParam('val', 's' + sSeason + 'e' + sEpisodeNr)
         params.setParam('IMDB', imdb)
         oGui.addFolder(oGuiElement, params, False, total)
     oGui.setView('episodes')
@@ -195,8 +191,8 @@ def showHosters():
         return hosters
 
     for sQulityNr, sID, sQulityTitle in aResult:
-        sPattern = '<div[^>]*class="mirrors\w+"[^>]*id="%s">(.*?)</div></div>' % sID
-        isMatchMirrors, sMirrorContainer = cParser().parse(sHtmlContent, sPattern)
+        pattern = '<div[^>]*class="mirrors\w+"[^>]*id="%s">(.*?)</div></div>' % sID
+        isMatchMirrors, sMirrorContainer = cParser().parse(sHtmlContent, pattern)
 
         if not isMatchMirrors:
             continue
@@ -231,5 +227,4 @@ def showSearch():
 
 
 def _search(oGui, sSearchText):
-    if not sSearchText: return
-    showEntries(URL_SEARCH % sSearchText.strip(), oGui)
+    showEntries(URL_SEARCH % sSearchText, oGui)
