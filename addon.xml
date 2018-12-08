@@ -23,6 +23,7 @@
    <platform>all</platform>
    <news>
    xStream 3.5.3~nightly
+    - [tmovie.to] Add Site
     - [streamit.ws] fix Serien
     - [xStream] Größe aller cover reduziert
     - [HDfilme] fix vip hoster
