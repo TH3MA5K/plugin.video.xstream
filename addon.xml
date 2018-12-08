@@ -23,8 +23,26 @@
    <platform>all</platform>
    <news>
    xStream 3.5.3~nightly
-    - Fix HDFilme (Thumbnails)
-   
+    - [streamit.ws] fix Serien
+    - [xStream] Größe aller cover reduziert
+    - [HDfilme] fix vip hoster
+    - [View4U] neu geschrieben
+    - [HDfilme] neu geschrieben
+    - [flimmerstube] fix hoster tnx anonymous
+    - [alleserien.com] Add Search filter
+    - [cinenator] Add Search filter
+    - [hd-streams.org] Add Search filter
+    - [netzkino_de] Add Search filter
+    - [kinox.one] fix hoster
+    - [parser] add re.search
+    - [Alleserien.com] Suche hinzugefügt
+    - [Filmpalast] Fix
+    - [moviestream] Add Seite
+    - [Cinenator] Add Seite
+    - [Movie2k AG] Fix Hoster and Search and Description
+    - [Filmpalast.to] neu geschrieben
+    - [HDFilme] Fix Thumbnails
+
    </news>
    <assets>
      <icon>icon.png</icon>
