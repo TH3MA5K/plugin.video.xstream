@@ -1,4 +1,5 @@
 xStream 3.5.3~nightly:
+- [xStream] Größe aller cover reduziert
 - [HDfilme] fix vip hoster
 - [View4U] neu geschrieben
 - [HDfilme] neu geschrieben
@@ -15,7 +16,7 @@ xStream 3.5.3~nightly:
 - [Cinenator] Add Seite
 - [Movie2k AG] Fix Hoster and Search and Description
 - [Filmpalast.to] neu geschrieben
-- Fix HDFilme (Thumbnails)
+- [HDFilme] Fix Thumbnails
 
 xStream 3.5.2
   11.10.2018
