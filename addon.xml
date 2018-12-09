@@ -23,6 +23,7 @@
    <platform>all</platform>
    <news>
    xStream 3.5.3~nightly
+    - [kinostern.com] Add Search filter
     - [ddl.me] Add Search filter and optimize code
     - [watchbox.de] Add Search filter
     - [tmovie.to] Add Site
