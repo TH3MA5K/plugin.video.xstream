@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import re
 from resources.lib import logger
 from resources.lib.gui.gui import cGui
 from resources.lib.gui.guiElement import cGuiElement
@@ -10,7 +9,6 @@ from resources.lib.parser import cParser
 SITE_IDENTIFIER = 'kinostern_com'
 SITE_NAME = 'KinoStern'
 SITE_ICON = 'kinostern_com.png'
-SITE_GLOBAL_SEARCH = False
 URL_MAIN = 'http://www.kinostern1.com/'
 URL_SEARCH = URL_MAIN + '?s=%s'
 
@@ -43,14 +41,14 @@ def showGenre():
     oGui.setEndOfDirectory()
 
 
-def showEntries(entryUrl=False, sGui=False):
+def showEntries(entryUrl=False, sGui=False, sSearchText=False):
     oGui = sGui if sGui else cGui()
     params = ParameterHandler()
     if not entryUrl: entryUrl = params.getValue('sUrl')
     oRequest = cRequestHandler(entryUrl, ignoreErrors=(sGui is not False))
-
     sHtmlContent = oRequest.request()
-    pattern = '<span class="center.*?<img src="([^"]+).*?<span[^>]class="movie-title">.*?<a[^>]href="([^"]+)"[^>]title="([^"]+)">.*?<span[^>]class="movie-release".*?(\d+).*?'
+    pattern = '<span class="center.*?<img src="([^"]+).*?<span[^>]class="movie-title">.*?'
+    pattern += '<a[^>]href="([^"]+)"[^>]title="([^"]+)">.*?<span[^>]class="movie-release".*?(\d+).*?'
     pattern += "<p[^>]class='story'>([^<]+)"
     isMatch, aResult = cParser().parse(sHtmlContent, pattern)
 
@@ -61,15 +59,15 @@ def showEntries(entryUrl=False, sGui=False):
     total = len(aResult)
     for sThumbnail, sUrl, sName, sYear, sDesc in aResult:
         sName = clear(sName)
-        sThumbnail = re.sub('-\d+x\d+\.', '.', sThumbnail)
+        if sSearchText and not cParser().search(sSearchText, sName):
+            continue
+        sThumbnail = cParser().replace('-\d+x\d+\.', '.', sThumbnail)
         oGuiElement = cGuiElement(sName, SITE_IDENTIFIER, 'showHosters')
         oGuiElement.setThumbnail(sThumbnail)
         oGuiElement.setFanart(sThumbnail)
         oGuiElement.setDescription(sDesc)
         oGuiElement.setYear(sYear)
         oGuiElement.setMediaType('movie')
-        params.setParam('sThumbnail', sThumbnail)
-        params.setParam('sName', sName)
         params.setParam('entryUrl', sUrl)
         oGui.addFolder(oGuiElement, params, False, total)
     if not sGui:
@@ -112,8 +110,7 @@ def showSearch():
 
 
 def _search(oGui, sSearchText):
-    if not sSearchText: return
-    showEntries(URL_SEARCH % sSearchText, oGui)
+    showEntries(URL_SEARCH % sSearchText, oGui, sSearchText)
 
 
 def clear(text):
