@@ -9,11 +9,10 @@ from resources.lib.parser import cParser
 SITE_IDENTIFIER = 'hdkino_to'
 SITE_NAME = 'HDKino.to'
 SITE_ICON = 'hdkino_to.png'
-SITE_GLOBAL_SEARCH = False
+
 URL_MAIN = 'https://hdkino.to'
 URL_FILME = URL_MAIN + '/filme?page=%s'
 URL_TOP_FILME = URL_MAIN + '/top?page=%s'
-URL_SEARCH = URL_MAIN + '/search/%s'
 
 
 def load():
@@ -25,24 +24,23 @@ def load():
     oGui.addFolder(cGuiElement('Filme', SITE_IDENTIFIER, 'showEntries'), params)
     params.setParam('sUrl', URL_TOP_FILME)
     oGui.addFolder(cGuiElement('Top Filme', SITE_IDENTIFIER, 'showEntries'), params)
-    oGui.addFolder(cGuiElement('Genres', SITE_IDENTIFIER, 'showGenres'), params)
-    oGui.addFolder(cGuiElement('Suche', SITE_IDENTIFIER, 'showSearch'))
+    params.setParam('Value', 'Genre')
+    oGui.addFolder(cGuiElement('Genres', SITE_IDENTIFIER, 'showValue'), params)
+    params.setParam('Value', 'Jahr')
+    oGui.addFolder(cGuiElement('Jahr', SITE_IDENTIFIER, 'showValue'), params)
     oGui.setEndOfDirectory()
 
 
-def showGenres():
+def showValue():
     oGui = cGui()
     params = ParameterHandler()
-    sHtmlContent = cRequestHandler('https://hdkino.to/genre').request()
-    pattern = '>Genres</div>.*?</div>'
+    sHtmlContent = cRequestHandler(URL_MAIN).request()
+    pattern = '>%s</div>.*?</div>' % params.getValue('Value')
     isMatch, sHtmlContainer = cParser.parseSingleResult(sHtmlContent, pattern)
 
-    if not isMatch:
-        oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
-        return
-
-    pattern = '<a[^>]*href="([^"]+)".*?>([^"]+)</a>'
-    isMatch, aResult = cParser.parse(sHtmlContainer, pattern)
+    if isMatch:
+        pattern = '<a[^>]*href="([^"]+)".*?>([^"]+)</a>'
+        isMatch, aResult = cParser.parse(sHtmlContainer, pattern)
 
     if not isMatch:
         oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
@@ -56,15 +54,12 @@ def showGenres():
     oGui.setEndOfDirectory()
 
 
-def showEntries(entryUrl=False, sGui=False, sSearchText=None):
+def showEntries(entryUrl=False, sGui=False):
     oGui = sGui if sGui else cGui()
     params = ParameterHandler()
     if not entryUrl: entryUrl = params.getValue('sUrl')
     page = params.getValue('page')
-    if sSearchText is not None:
-        oRequest = cRequestHandler(entryUrl, ignoreErrors=(sGui is not False))
-    else:
-        oRequest = cRequestHandler(entryUrl % page)
+    oRequest = cRequestHandler(entryUrl % page)
     sHtmlContent = oRequest.request()
     pattern = 'search_frame".*?<a[^>]href="([^"]+)"><img[^>]src="([^"]+).*?<strong>([^<]+).*?year/([\d]+)'
     isMatch, aResult = cParser().parse(sHtmlContent, pattern)
@@ -73,25 +68,23 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=None):
         if not sGui: oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
         return
 
+    cf = cRequestHandler.createUrl(entryUrl, oRequest)
     total = len(aResult)
     for sUrl, sThumbnail, sName, sYear in aResult:
-        sThumbnail = cParser().replace('\d+x\d+', '', sThumbnail)
+        sThumbnail = cParser().replace('\d+x\d+', '', sThumbnail + cf)
         oGuiElement = cGuiElement(sName, SITE_IDENTIFIER, 'showHosters')
         oGuiElement.setThumbnail(sThumbnail)
         oGuiElement.setFanart(sThumbnail)
         oGuiElement.setYear(sYear)
         oGuiElement.setMediaType('movie')
-        params.setParam('sThumbnail', sThumbnail)
-        params.setParam('sName', sName)
         params.setParam('entryUrl', sUrl)
         oGui.addFolder(oGuiElement, params, False, total)
     if not sGui:
-        if sSearchText is None:
-            isMatchNextPage, sNextUrl = cParser().parse(sHtmlContent, "page[^>]([\d]+)")
-            if isMatchNextPage:
-                if max(sNextUrl) > page:
-                    params.setParam('page', int(page) + 1)
-                    oGui.addNextPage(SITE_IDENTIFIER, 'showEntries', params)
+        isMatchNextPage, sNextUrl = cParser().parse(sHtmlContent, "page[^>]([\d]+)")
+        if isMatchNextPage:
+            if max(sNextUrl) > page:
+                params.setParam('page', int(page) + 1)
+                oGui.addNextPage(SITE_IDENTIFIER, 'showEntries', params)
         oGui.setView('movies')
         oGui.setEndOfDirectory()
 
@@ -99,12 +92,12 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=None):
 def showHosters():
     sUrl = ParameterHandler().getValue('entryUrl')
     sHtmlContent = cRequestHandler(sUrl).request()
-    sPattern = 'data-video-id="(.*?)"\sdata-provider="(.*?)"'
-    isMatch, aResult = cParser().parse(sHtmlContent, sPattern)
+    pattern = 'data-video-id="(.*?)"\sdata-provider="(.*?)"'
+    isMatch, aResult = cParser().parse(sHtmlContent, pattern)
     hosters = []
     if isMatch:
         for sID, sName in aResult:
-            sHtmlContent = cRequestHandler('https://hdkino.to/embed.php?video_id=' + sID + '&provider=' + sName).request()
+            sHtmlContent = cRequestHandler(URL_MAIN + '/embed.php?video_id=' + sID + '&provider=' + sName).request()
             isMatch, aResult = cParser().parse(sHtmlContent, 'src="([^"]+)"')
             for sUrl in aResult:
                 hoster = {'link': sUrl, 'name': sName}
@@ -116,16 +109,3 @@ def showHosters():
 
 def getHosterUrl(sUrl=False):
     return [{'streamUrl': sUrl, 'resolved': False}]
-
-
-def showSearch():
-    oGui = cGui()
-    sSearchText = oGui.showKeyBoard()
-    if not sSearchText: return
-    _search(False, sSearchText)
-    oGui.setEndOfDirectory()
-
-
-def _search(oGui, sSearchText):
-    if not sSearchText: return
-    showEntries(URL_SEARCH % sSearchText, oGui, sSearchText)
