@@ -32,12 +32,9 @@ def showGenres():
     pattern = '<nav[^>]class="genres">.*?</ul>'
     isMatch, sHtmlContainer = cParser.parseSingleResult(sHtmlContent, pattern)
 
-    if not isMatch:
-        oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
-        return
-
-    pattern = '<a[^>]*href="([^"]+)".*?>([^"]+)</a>'
-    isMatch, aResult = cParser.parse(sHtmlContainer, pattern)
+    if  isMatch:
+        pattern = '<a[^>]*href="([^"]+)".*?>([^"]+)</a>'
+        isMatch, aResult = cParser.parse(sHtmlContainer, pattern)
 
     if not isMatch:
         oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
@@ -49,26 +46,24 @@ def showGenres():
     oGui.setEndOfDirectory()
 
 
-def showEntries(entryUrl=False, sGui=False, sSearchText=None):
+def showEntries(entryUrl=False, sGui=False, sSearchText=False):
     oGui = sGui if sGui else cGui()
     params = ParameterHandler()
     if not entryUrl: entryUrl = params.getValue('sUrl')
     oRequest = cRequestHandler(entryUrl, ignoreErrors=(sGui is not False))
     sHtmlContent = oRequest.request()
-    if sSearchText is not None:
+    if sSearchText is not False:
         pattern = 'search-page.*?<div[^>]class="sidebar[^>]scrolling">'
     else:
         pattern = 'class="item movies">.*?<div[^>]class="sidebar[^>]scrolling">'
     isMatch, sHtmlContainer = cParser.parseSingleResult(sHtmlContent, pattern)
 
-    if not isMatch:
-        if not sGui: oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
-        return
-    if sSearchText is not None:
-        pattern = '<img[^>]src="([^"]+).*?<a[^>]href="([^"]+)">([^<]+).*?year">([\d]+)'
-    else:
-        pattern = '<img[^>]src="([^"]+).*?<h3><a[^>]href="([^"]+)">([^<]+)</a></h3>[^>]<span>([\d]+)'
-    isMatch, aResult = cParser.parse(sHtmlContainer, pattern)
+    if isMatch:
+        if sSearchText is not False:
+            pattern = '<img[^>]src="([^"]+).*?<a[^>]href="([^"]+)">([^<]+).*?year">([\d]+)'
+        else:
+            pattern = '<img[^>]src="([^"]+).*?<h3><a[^>]href="([^"]+)">([^<]+)</a></h3>[^>]<span>([\d]+)'
+        isMatch, aResult = cParser.parse(sHtmlContainer, pattern)
 
     if not isMatch:
         if not sGui: oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
@@ -76,6 +71,8 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=None):
 
     total = len(aResult)
     for sThumbnail, sUrl, sName, sYear in aResult:
+        if sSearchText and not cParser().search(sSearchText, sName):
+            continue
         sThumbnail = cParser.replace('-\d+x\d+\.', '.', sThumbnail)
         oGuiElement = cGuiElement(sName, SITE_IDENTIFIER, 'showHosters')
         oGuiElement.setThumbnail(sThumbnail)
@@ -96,21 +93,22 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=None):
 def showHosters():
     sUrl = ParameterHandler().getValue('entryUrl')
     sHtmlContent = cRequestHandler(sUrl).request()
-    sPattern = 'player-option-\d".*?data-post="([\d]+)[^>]*data-nume="([\d]+)">.*?server">([^<]+).*?<img[^>]src=[^>]([^>]+)'
-    isMatch, aResult = cParser().parse(sHtmlContent, sPattern)
+    pattern = 'data-type="([^"]+).*?data-post="([\d]+)[^>]*data-nume="([\d]+)">.*?server">([^<]+).*?src=[^>]([^>]+)'
+    isMatch, aResult = cParser().parse(sHtmlContent, pattern)
     hosters = []
     if isMatch:
-        for post, nume, sName, sLang in aResult:
+        for type, post, nume, sName, sLang in aResult:
             if '/de' in sLang:
                 lang = ' (Deutsch)'
             elif '/en' in sLang:
                 lang = ' (Englisch)'
             else:
                 lang = ''
-            oRequest = cRequestHandler('https://kino.cx/wp-admin/admin-ajax.php')
+            oRequest = cRequestHandler(URL_MAIN + 'wp-admin/admin-ajax.php')
             oRequest.addParameters('action', 'doo_player_ajax')
-            oRequest.addParameters('post', post)
             oRequest.addParameters('nume', nume)
+            oRequest.addParameters('post', post)
+            oRequest.addParameters('type', type)
             oRequest.setRequestType(1)
             sHtmlContent = oRequest.request()
             isMatch, aResult = cParser().parse(sHtmlContent, "src=[^>]([^']+)")
@@ -145,5 +143,4 @@ def showSearch():
 
 
 def _search(oGui, sSearchText):
-    if not sSearchText: return
     showEntries(URL_SEARCH % sSearchText, oGui, sSearchText)
