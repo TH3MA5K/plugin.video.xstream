@@ -13,6 +13,7 @@ SITE_IDENTIFIER = 'animes-stream24_tv'
 SITE_NAME = 'Animes-Stream24'
 SITE_ICON = 'as24.png'
 URL_MAIN = 'http://as.animes-stream24.tv/'
+SITE_GLOBAL_SEARCH = False
 
 def load():
     oGui = cGui()
