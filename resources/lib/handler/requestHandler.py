@@ -262,6 +262,21 @@ class cRequestHandler:
             if fileAge > self.cacheTime:
                 os.remove(cacheFile)
 
+    @staticmethod
+    def createUrl(sUrl, oRequest):
+        import urlparse
+        parsed_url = urlparse.urlparse(sUrl)
+        netloc = parsed_url.netloc[4:] if parsed_url.netloc.startswith('www.') else parsed_url.netloc
+        cfId = oRequest.getCookie('__cfduid', '.' + netloc)
+        cfClear = oRequest.getCookie('cf_clearance', '.' + netloc)
+        if cfId and cfClear and 'Cookie=Cookie:' not in sUrl:
+            delimiter = '&' if '|' in sUrl else '|'
+            sUrl = delimiter + "Cookie=Cookie: __cfduid=" + cfId.value + "; cf_clearance=" + cfClear.value
+        if 'User-Agent=' not in sUrl:
+            delimiter = '&' if '|' in sUrl else '|'
+            sUrl += delimiter + "User-Agent=" + oRequest.getHeaderEntry('User-Agent')
+        return sUrl
+
 # python 2.7.9 and 2.7.10 certificate workaround
 class newHTTPSHandler(urllib2.HTTPSHandler):
     def do_open(self, conn_factory, req, **kwargs):
