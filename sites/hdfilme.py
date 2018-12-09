@@ -70,12 +70,9 @@ def showGenre():
     pattern = 'Genre</option>.*?</div>'
     isMatch, sContainer = cParser.parseSingleResult(sHtmlContent, pattern)
 
-    if not isMatch:
-        oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
-        return
-
-    pattern = 'value="([^"]+)">([^<]+)'
-    isMatch, aResult = cParser.parse(sContainer, pattern)
+    if  isMatch:
+        pattern = 'value="([^"]+)">([^<]+)'
+        isMatch, aResult = cParser.parse(sContainer, pattern)
 
     if not isMatch:
         oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
@@ -97,25 +94,21 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=False):
     pattern = '<ul[^>]class="products row">(.*?)</ul>'
     isMatch, sContainer = cParser.parseSingleResult(sHtmlContent, pattern)
 
-    if not sContainer:
-        if not sGui: oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
-        return
-
-    pattern = '<div[^>]*class="box-product clearfix"[^>]*>\s*?'
-    pattern += '<a[^>]*href="([^"]*)"[^>]*>.*?'
-    pattern += '<img[^>]*src="([^"]*)"[^>]*>.*?'
-    pattern += '(?:<div[^>]*class="episode"[^>]*>([^"]*)</div>.*?)?'
-    pattern += '<div[^>]*class="popover-title"[^>]*>.*?'
-    pattern += '<span[^>]*class="name"[^>]*>([^<>]*)</span>.*?'
-    pattern += '<div[^>]*class="popover-content"[^>]*>.*?<p>([^<]+)</p>'
-
-    isMatch, aResult = cParser.parse(sContainer, pattern)
+    if isMatch:
+        pattern = '<div[^>]*class="box-product clearfix"[^>]*>\s*?'
+        pattern += '<a[^>]*href="([^"]*)"[^>]*>.*?'
+        pattern += '<img[^>]*src="([^"]*)"[^>]*>.*?'
+        pattern += '(?:<div[^>]*class="episode"[^>]*>([^"]*)</div>.*?)?'
+        pattern += '<div[^>]*class="popover-title"[^>]*>.*?'
+        pattern += '<span[^>]*class="name"[^>]*>([^<>]*)</span>.*?'
+        pattern += '<div[^>]*class="popover-content"[^>]*>.*?<p>([^<]+)</p>'
+        isMatch, aResult = cParser.parse(sContainer, pattern)
 
     if not isMatch:
         if not sGui: oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
         return
 
-    cf = createUrl(entryUrl, oRequest)
+    cf = cRequestHandler.createUrl(entryUrl, oRequest)
     total = len(aResult)
     for sUrl, sThumbnail, sEpisodeNr, sName, sDesc in aResult:
         if sSearchText and not cParser().search(sSearchText, sName):
@@ -234,18 +227,3 @@ def showSearch():
 
 def _search(oGui, sSearchText):
     showEntries(URL_SEARCH % sSearchText, oGui, sSearchText)
-
-
-def createUrl(sUrl, oRequest):
-    import urlparse
-    parsed_url = urlparse.urlparse(sUrl)
-    netloc = parsed_url.netloc[4:] if parsed_url.netloc.startswith('www.') else parsed_url.netloc
-    cfId = oRequest.getCookie('__cfduid', '.' + netloc)
-    cfClear = oRequest.getCookie('cf_clearance', '.' + netloc)
-    if cfId and cfClear and 'Cookie=Cookie:' not in sUrl:
-        delimiter = '&' if '|' in sUrl else '|'
-        sUrl = delimiter + "Cookie=Cookie: __cfduid=" + cfId.value + "; cf_clearance=" + cfClear.value
-    if 'User-Agent=' not in sUrl:
-        delimiter = '&' if '|' in sUrl else '|'
-        sUrl += delimiter + "User-Agent=" + oRequest.getHeaderEntry('User-Agent')
-    return sUrl
