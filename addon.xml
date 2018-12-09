@@ -23,6 +23,10 @@
    <platform>all</platform>
    <news>
    xStream 3.5.3~nightly
+    - [filmpalast.to] Add Search filter
+    - [kino.cx] Add Search filter and Fix Hoster
+    - [HDFilme] optimize code
+    - [HDKino.to] Add Year and optimize code
     - [kinostern.com] Add Search filter
     - [ddl.me] Add Search filter and optimize code
     - [watchbox.de] Add Search filter
