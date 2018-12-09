@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+# -*- coding: utf-8 -*-
 import cookielib, hashlib, httplib, os, socket, sys, time, urllib, urllib2, xbmcgui
 from resources.lib import logger, cookie_helper, common
 from resources.lib.cBFScrape import cBFScrape
@@ -59,7 +59,6 @@ class cRequestHandler:
     def getResponseHeader(self):
         return self.__sResponseHeader
 
-    # url after redirects
     def getRealUrl(self):
         return self.__sRealUrl
 
@@ -84,7 +83,7 @@ class cRequestHandler:
                 return sContent
 
         cookieJar = cookielib.LWPCookieJar(filename=self._cookiePath)
-        try:  # TODO ohne try evtl.
+        try:
             cookieJar.load(ignore_discard=self.__bIgnoreDiscard, ignore_expires=self.__bIgnoreExpired)
         except Exception as e:
             logger.info(e)
@@ -135,7 +134,7 @@ class cRequestHandler:
             return ''
 
         self.__sResponseHeader = oResponse.info()
-        # handle gzipped content
+
         if self.__sResponseHeader.get('Content-Encoding') == 'gzip':
             import gzip
             import StringIO
@@ -185,7 +184,7 @@ class cRequestHandler:
 
     def getCookie(self, sCookieName, sDomain=''):
         cookieJar = cookielib.LWPCookieJar()
-        try:  # TODO ohne try evtl.
+        try:
             cookieJar.load(self._cookiePath, self.__bIgnoreDiscard, self.__bIgnoreExpired)
         except Exception as e:
             logger.info(e)
@@ -200,7 +199,7 @@ class cRequestHandler:
 
     def setCookie(self, oCookie):
         cookieJar = cookielib.LWPCookieJar()
-        try:  # TODO ohne try evtl.
+        try:
             cookieJar.load(self._cookiePath, self.__bIgnoreDiscard, self.__bIgnoreExpired)
         except Exception as e:
             logger.info(e)
@@ -213,7 +212,6 @@ class cRequestHandler:
     def ignoreExpired(self, bIgnoreExpired):
         self.__bIgnoreExpired = bIgnoreExpired
 
-    ###Caching
     def setCachePath(self, cache=''):
         if not cache:
             profilePath = common.profilePath
@@ -263,12 +261,13 @@ class cRequestHandler:
                 os.remove(cacheFile)
 
     @staticmethod
-    def createUrl(sUrl, oRequest):
+    def createUrl(Url, oRequest):
         import urlparse
-        parsed_url = urlparse.urlparse(sUrl)
+        parsed_url = urlparse.urlparse(Url)
         netloc = parsed_url.netloc[4:] if parsed_url.netloc.startswith('www.') else parsed_url.netloc
         cfId = oRequest.getCookie('__cfduid', '.' + netloc)
         cfClear = oRequest.getCookie('cf_clearance', '.' + netloc)
+        sUrl = ''
         if cfId and cfClear and 'Cookie=Cookie:' not in sUrl:
             delimiter = '&' if '|' in sUrl else '|'
             sUrl = delimiter + "Cookie=Cookie: __cfduid=" + cfId.value + "; cf_clearance=" + cfClear.value
