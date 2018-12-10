@@ -76,33 +76,8 @@ class cUtil:
         return re.sub("&(\w+;|#x?\d+;?)", fixup, text.strip())
 
     @staticmethod
-    def str_to_utf8(s):
-        if '\\u00c4' in s:
-            s = s.replace("\\u00c4", "Ä")
-        if '\\u00e4' in s:
-            s = s.replace("\\u00e4", "ä")
-        if '\\u00d6' in s:
-            s = s.replace("\\u00d6", "Ö")
-        if '\\u00f6' in s:
-            s = s.replace("\\u00f6", "ö")
-        if '\\u00dc' in s:
-            s = s.replace("\\u00dc", "Ü")
-        if '\\u00fc' in s:
-            s = s.replace("\\u00fc", "ü")
-        if '\\u00df' in s:
-            s = s.replace("\\u00df", "ß")
-        if '\u2013' in s:
-            s = s.replace("\u2013", "-")
-        if '\u00b3' in s:
-            s = s.replace("\u00b3", "³")
-            
-            
-        return s
-
-    @staticmethod
     def cleanse_text(text):
         if text is None: text = ''
-        text = cUtil.str_to_utf8(text)
         text = cUtil.unescape(text)
         text = cUtil.removeHtmlTags(text)
         if isinstance(text, unicode):
