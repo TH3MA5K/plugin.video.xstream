@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import re
 from resources.lib import logger
 from resources.lib.gui.gui import cGui
 from resources.lib.gui.guiElement import cGuiElement
@@ -45,12 +44,11 @@ def showGenre():
     oGui.setEndOfDirectory()
 
 
-def showEntries(entryUrl=False, sGui=False, sSearchText=None):
+def showEntries(entryUrl=False, sGui=False, sSearchText=False):
     oGui = sGui if sGui else cGui()
     params = ParameterHandler()
     if not entryUrl: entryUrl = params.getValue('sUrl')
     oRequest = cRequestHandler(entryUrl, ignoreErrors=(sGui is not False))
-
     if sSearchText:
         oRequest.addParameters('story', sSearchText)
         oRequest.addParameters('do', 'search')
@@ -73,18 +71,22 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=None):
         if not sGui: oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
         return
 
+    cf = cRequestHandler.createUrl(entryUrl, oRequest)
     total = len(aResult)
     for sUrl, sThumbnail, sName in aResult:
+        if sSearchText and not cParser().search(sSearchText, sName):
+            continue
+        sThumbnail = sThumbnail + cf
         isTvshow = True if 'staffel' in sName.lower() else False
-        sYear = re.compile("(.*?)\((\d*| \d*)\)").findall(sName)
+        isYear, sYear = cParser.parse(sName, "(.*?)\((\d*)\)")
         for name, year in sYear:
             sName = name
-            sYear = year.strip()
+            sYear = year
             break
         oGuiElement = cGuiElement(sName, SITE_IDENTIFIER, 'showSeasons' if isTvshow else 'showHosters')
         oGuiElement.setThumbnail(sThumbnail)
         oGuiElement.setFanart(sThumbnail)
-        if sYear:
+        if isYear:
             oGuiElement.setYear(sYear)
         oGuiElement.setMediaType('tvshow' if isTvshow else 'movie')
         params.setParam('sThumbnail', sThumbnail)
@@ -108,14 +110,11 @@ def showSeasons():
     sTVShowTitle = params.getValue('TVShowTitle')
     sHtmlContent = cRequestHandler(entryUrl).request()
     pattern = "hdgo.show.*?</script>"
-    isMatch, sHtmlContainer = cParser.parseSingleResult(sHtmlContent, pattern)
+    isMatch, sContainer = cParser.parseSingleResult(sHtmlContent, pattern)
 
-    if not isMatch:
-        oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
-        return
-
-    pattern = "'([^\]]+)"
-    isMatch, aResult = cParser.parse(sHtmlContainer, pattern)
+    if isMatch:
+        pattern = "'([^\]]+)"
+        isMatch, aResult = cParser.parse(sContainer, pattern)
 
     if not isMatch:
         oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
@@ -130,6 +129,7 @@ def showSeasons():
         oGuiElement.setSeason(i)
         if sThumbnail:
             oGuiElement.setThumbnail(sThumbnail)
+            oGuiElement.setFanart(sThumbnail)
         params.setParam('sNr', i)
         params.setParam('sSeasonNr', sSeasonNr)
         oGui.addFolder(oGuiElement, params, True, total)
@@ -161,6 +161,7 @@ def showEpisodes():
         oGuiElement.setEpisode(i)
         if sThumbnail:
             oGuiElement.setThumbnail(sThumbnail)
+            oGuiElement.setFanart(sThumbnail)
         params.setParam('entryUrl', sEpisodeNr)
         oGui.addFolder(oGuiElement, params, False, total)
     oGui.setView('episodes')
@@ -225,11 +226,8 @@ def showHosters():
                     hoster = {'link': sUrl, 'name': 'getvi.tv ' + sQualy}
                     hosters.append(hoster)
             else:
-                try:
-                    hname = re.compile('^(?:https?://)?(?:[^@\n]+@)?([^:/\n]+)').findall(sUrl)[0]
-                except:
-                    pass
-                hoster = {'link': sUrl, 'name': hname}
+                sName = cParser.urlparse(sUrl)
+                hoster = {'link': sUrl, 'name': sName}
                 hosters.append(hoster)
     if hosters:
         hosters.append('getHosterUrl')
@@ -251,7 +249,6 @@ def showSearch():
 
 
 def _search(oGui, sSearchText):
-    if not sSearchText: return
     showEntries(URL_MAIN, oGui, sSearchText)
 
 
