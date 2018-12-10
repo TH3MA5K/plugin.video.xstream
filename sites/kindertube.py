@@ -6,7 +6,6 @@ from resources.lib.parser import cParser
 from resources.lib import logger
 from resources.lib.handler.ParameterHandler import ParameterHandler
 from resources.lib.handler.pluginHandler import cPluginHandler
-import re
 
 SITE_IDENTIFIER = 'kindertube'
 SITE_NAME = 'Kindertube'
@@ -18,7 +17,7 @@ URL_02 = URL_MAIN + 'kleinkind-filme-0-2-jahre.html'
 URL_KLEINKINDER = URL_MAIN + 'serien-für-kleinkinder.html'
 URL_LEHRFILME = URL_MAIN + 'lehrfilme-für-kinder.html'
 URL_MUSIK = URL_MAIN + 'musik-für-kinder.html'
-
+URL_SERIEN = URL_MAIN + 'alte-kinderserien.html'
 
 def load():
     logger.info("Load %s" % SITE_NAME)
@@ -34,6 +33,8 @@ def load():
     oGui.addFolder(cGuiElement('Lehrfilme', SITE_IDENTIFIER, 'showEntries'), params)
     params.setParam('sUrl', URL_MUSIK)
     oGui.addFolder(cGuiElement('Musik', SITE_IDENTIFIER, 'showEntries'), params)
+    params.setParam('sUrl', URL_SERIEN)
+    oGui.addFolder(cGuiElement('Serien von früher', SITE_IDENTIFIER, 'showEntries'), params)
     oGui.setEndOfDirectory()
 
 
@@ -41,17 +42,13 @@ def showEntries(entryUrl=False, sGui=False):
     oGui = sGui if sGui else cGui()
     params = ParameterHandler()
     if not entryUrl: entryUrl = params.getValue('sUrl')
-
     sHtmlContent = cRequestHandler(entryUrl).request()
     pattern = '<div[^>]*class="categories[^>]*onlyCategories">.*?<div[^>]*class="panel'
     isMatch, sContainer = cParser().parseSingleResult(sHtmlContent, pattern)
 
-    if not isMatch:
-        if not sGui: oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
-        return
-
-    pattern = '<a[^>]*href="([^"]+).*?<img[^>]*src="([^"]+).*?"title">([^<]+)'
-    isMatch, aResult = cParser().parse(sContainer, pattern)
+    if isMatch:
+        pattern = '<a[^>]*href="([^"]+).*?<img[^>]*src="([^"]+).*?"title">([^<]+)'
+        isMatch, aResult = cParser().parse(sContainer, pattern)
 
     if not isMatch:
         if not sGui: oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
@@ -70,7 +67,6 @@ def showEpisodes(sEpisodes=False, sGui=False):
     oGui = sGui if sGui else cGui()
     params = ParameterHandler()
     if not sEpisodes: sEpisodes = params.getValue('sEpisodes')
-
     sHtmlContent = cRequestHandler(sEpisodes).request()
     pattern = 'data-video="([^"]+).*?<img[^>]*src="([^"]+)".*?</div><span[^>]*class="title">([^<]+)'
     isMatch, aResult = cParser().parse(sHtmlContent, pattern)
@@ -82,7 +78,7 @@ def showEpisodes(sEpisodes=False, sGui=False):
     total = len(aResult)
     for sUrl, sThumbnail, sName in aResult:
         oGuiElement = cGuiElement(sName, SITE_IDENTIFIER, 'getHosterUrl')
-        Episodes = re.compile('de/([^"]+/)', flags=re.I | re.M).findall(sEpisodes)[0]
+        isMatch, Episodes = cParser.parseSingleResult(sEpisodes, 'de/([^"]+/)')
         oGuiElement.setThumbnail(URL_MAIN + Episodes + sThumbnail)
         oGuiElement.setDescription(URL_MAIN + Episodes + sThumbnail)
         params.setParam('url', 'https://www.youtube.com/watch?v=' + sUrl)
@@ -91,5 +87,4 @@ def showEpisodes(sEpisodes=False, sGui=False):
 
 
 def getHosterUrl(sUrl=False):
-    if not sUrl: sUrl = ParameterHandler().getValue('url')
     return [{'streamUrl': sUrl, 'resolved': False}]
