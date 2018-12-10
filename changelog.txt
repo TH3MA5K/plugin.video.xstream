@@ -1,4 +1,8 @@
-xStream 3.5.3~nightly:
+xStream 3.5.4~nightly
+
+
+xStream 3.5.3
+  10.12.2018
 - [movie2k.sh] code cleanup
 - [tmovie.to] code cleanup
 - [kinoger.com] code cleanup
