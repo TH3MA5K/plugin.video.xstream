@@ -23,6 +23,8 @@
    <platform>all</platform>
    <news>
    xStream 3.5.3~nightly
+    - [kinox] code cleanup
+    - [moviedream.ws] Fix Search and next page usw
     - [filmpalast.to] Add Search filter
     - [kino.cx] Add Search filter and Fix Hoster
     - [HDFilme] optimize code
