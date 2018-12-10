@@ -23,6 +23,11 @@
    <platform>all</platform>
    <news>
    xStream 3.5.3~nightly
+    - [movie2k.sh] code cleanup
+    - [tmovie.to] code cleanup
+    - [kinoger.com] code cleanup
+    - [alleserien.com] code cleanup
+    - [Kindertube] code cleanup
     - [kinox] code cleanup
     - [moviedream.ws] Fix Search and next page usw
     - [filmpalast.to] Add Search filter
