@@ -11,8 +11,11 @@ class cParser:
         return False, aMatches
 
     @staticmethod
-    def __replaceSpecialCharacters(sString):
-        return sString.replace('\\/', '/')
+    def __replaceSpecialCharacters(s):
+        s = s.replace('\\/','/').replace("&amp;", "&").replace("\\u00c4", "Ä").replace("\\u00e4", "ä")
+        s = s.replace("\\u00d6", "Ö").replace("\\u00f6", "ö").replace("\\u00dc", "Ü").replace("\\u00fc", "ü")
+        s = s.replace("\\u00df", "ß").replace("\u2013", "-").replace('\u00b2','²').replace("\u00b3", "³")
+        return s
 
     @staticmethod
     def parse(sHtmlContent, pattern, iMinFoundValue=1, ignoreCase=False):
@@ -44,3 +47,8 @@ class cParser:
         if len(aMatches) > 0:
             return int(aMatches[0])
         return 0
+
+    @staticmethod
+    def urlparse(sUrl):
+        from urlparse import urlparse
+        return urlparse(sUrl).netloc.title()
