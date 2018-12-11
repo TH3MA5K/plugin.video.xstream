@@ -1,5 +1,5 @@
 xStream 3.5.4~nightly
-
+- [kinostern] code cleanup
 
 xStream 3.5.3
   10.12.2018
