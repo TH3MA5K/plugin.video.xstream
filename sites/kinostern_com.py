@@ -56,13 +56,13 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=False):
         if not sGui: oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
         return
 
+    cf = cRequestHandler.createUrl(entryUrl, oRequest)
     total = len(aResult)
     for sThumbnail, sUrl, sName, sYear, sDesc in aResult:
-        sName = clear(sName)
         if sSearchText and not cParser().search(sSearchText, sName):
             continue
-        sThumbnail = cParser().replace('-\d+x\d+\.', '.', sThumbnail)
-        oGuiElement = cGuiElement(sName, SITE_IDENTIFIER, 'showHosters')
+        sThumbnail = cParser().replace('-\d+x\d+\.', '.', sThumbnail + cf)
+        oGuiElement = cGuiElement(clear(sName), SITE_IDENTIFIER, 'showHosters')
         oGuiElement.setThumbnail(sThumbnail)
         oGuiElement.setFanart(sThumbnail)
         oGuiElement.setDescription(sDesc)
@@ -82,8 +82,8 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=False):
 def showHosters():
     sUrl = ParameterHandler().getValue('entryUrl')
     sHtmlContent = cRequestHandler(sUrl).request()
-    sPattern = '<a[^>]href="([^"]+)"><span>([^"]+)</span>'
-    isMatch, aResult = cParser().parse(sHtmlContent, sPattern)
+    pattern = '<a[^>]href="([^"]+)"><span>([^"]+)</span>'
+    isMatch, aResult = cParser().parse(sHtmlContent, pattern)
     hosters = []
     if isMatch:
         for Url, sName in aResult:
