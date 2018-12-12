@@ -41,15 +41,11 @@ def showGenre():
     oGui = cGui()
     params = ParameterHandler()
     sHtmlContent = cRequestHandler(URL_MAIN).request()
-    pattern = '">Genres.*?</ul>'
-    isMatch, sHtmlContainer = cParser.parseSingleResult(sHtmlContent, pattern)
+    isMatch, sContainer = cParser.parseSingleResult(sHtmlContent, ">Genres.*?</ul>")
 
-    if not isMatch:
-        oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
-        return
-
-    pattern = '<a[^>]*href="([^"]+)".*?>([^"]+)</a>'
-    isMatch, aResult = cParser.parse(sHtmlContainer, pattern)
+    if isMatch:
+        pattern = '<a[^>]*href="([^"]+)".*?>([^"]+)</a>'
+        isMatch, aResult = cParser.parse(sContainer, pattern)
 
     if not isMatch:
         oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
@@ -61,7 +57,7 @@ def showGenre():
     oGui.setEndOfDirectory()
 
 
-def showEntries(entryUrl=False, sGui=False, sSearchText=None):
+def showEntries(entryUrl=False, sGui=False, sSearchText=False):
     oGui = sGui if sGui else cGui()
     params = ParameterHandler()
     if not entryUrl: entryUrl = params.getValue('sUrl')
@@ -79,26 +75,27 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=None):
     pattern = '<div[^>]id="mainbar.*?<div[^>]class="clearfix'
     isMatch, sContainer = cParser().parseSingleResult(sHtmlContent, pattern)
 
-    if not isMatch:
-        if not sGui: oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
-        return
-
-    pattern = '<div[^>]class="shortstory-in">.*?<a[^>]href="([^"]+)"[^>]title="([^"]+).*?<img[^>]src="([^"]+).*?<span class="film-rip">(.*?)</span>'
-    isMatch, aResult = cParser().parse(sContainer, pattern)
+    if isMatch:
+        pattern = '<div[^>]class="shortstory-in">.*?<a[^>]href="([^"]+)"[^>]title="([^"]+).*?<img[^>]src="([^"]+).*?<span class="film-rip">(.*?)</span>'
+        isMatch, aResult = cParser().parse(sContainer, pattern)
 
     if not isMatch:
         if not sGui: oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
         return
 
+    cf = cRequestHandler.createUrl(entryUrl, oRequest)
     total = len(aResult)
     for sUrl, sName, sThumbnail, sDummy in aResult:
+        if sSearchText and not cParser().search(sSearchText, sName):
+            continue
         isTvshow = True if 'Staffel' in sDummy else False
+        sThumbnail = sThumbnail + cf
         if isTvshow:
             if not 'Staffel' in sName:
                 isMatch, st = cParser().parseSingleResult(sDummy, 'Staffel.*?([\d]+).*?</a>')
                 if isMatch:
                     sName = sName + ' ' + st + ' Staffel'
-        oGuiElement = cGuiElement(sName, SITE_IDENTIFIER, 'showSeasons' if isTvshow else 'showHosters')
+        oGuiElement = cGuiElement(sName, SITE_IDENTIFIER, 'showEpisodes' if isTvshow else 'showHosters')
         oGuiElement.setThumbnail(sThumbnail)
         oGuiElement.setFanart(sThumbnail)
         oGuiElement.setMediaType('tvshow' if isTvshow else 'movie')
@@ -115,7 +112,7 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=None):
         oGui.setEndOfDirectory()
 
 
-def showSeasons():
+def showEpisodes():
     oGui = cGui()
     params = ParameterHandler()
     entryUrl = params.getValue('entryUrl')
@@ -124,84 +121,83 @@ def showSeasons():
     oRequest = cRequestHandler(entryUrl)
     oRequest.addHeaderEntry('Referer', entryUrl)
     sHtmlContent = oRequest.request()
-    pattern = '<iframe[^>]src="([^"]+)'
-    isMatch, sHtmlContent = cParser().parse(sHtmlContent, pattern)
-    oRequest = cRequestHandler('' + sHtmlContent[0])
-    oRequest.addHeaderEntry('Referer', entryUrl)
-    sHtmlContent = oRequest.request()
-    pattern = '<iframe[^>]src="([^"]+)'
-    isMatch, sHtmlContent = cParser().parse(sHtmlContent, pattern)
-    oRequest = cRequestHandler('http:' + sHtmlContent[0])
-    oRequest.addHeaderEntry('Referer', entryUrl)
-    sHtmlContent = oRequest.request()
-    pattern = "var[^>]season_list.*?var"
-    isMatch, sHtmlContainer = cParser.parseSingleResult(sHtmlContent, pattern)
-
+    pattern = 'vk.show.*?</script>'
+    isMatch, sContainer = cParser.parseSingleResult(sHtmlContent, pattern)
+    if isMatch:
+        pattern = "(http[^',]+)"
+        isMatch, aResult = cParser.parse(sContainer, pattern)
     if not isMatch:
-        oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
-        return
-
-    pattern = '"([^",]+)'
-    isMatch, aResult = cParser.parse(sHtmlContainer, pattern)
+        pattern = '<iframe[^>]src="([^"]+)'
+        isMatch, sUrl = cParser().parse(sHtmlContent, pattern)
+        if isMatch:
+            oRequest = cRequestHandler('' + sUrl[0])
+            oRequest.addHeaderEntry('Referer', entryUrl)
+            sUrl = oRequest.request()
+            pattern = '<iframe[^>]src="([^"]+)'
+            isMatch, sUrl = cParser().parse(sUrl, pattern)
+        if isMatch:
+            oRequest = cRequestHandler('http:' + sUrl[0])
+            oRequest.addHeaderEntry('Referer', entryUrl)
+            sUrl = oRequest.request()
+            pattern = "var[^>]season_list.*?var"
+            isMatch, sContainer = cParser.parseSingleResult(sUrl, pattern)
+            pattern = '"([^",]+)'
+            isMatch, aResult = cParser.parse(sContainer, pattern)
 
     if not isMatch:
         oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
         return
 
     i = 0
+    isDesc, sDesc = cParser.parseSingleResult(sHtmlContent, 'description[^>]*content="([^"]+)')
     total = len(aResult)
     for sUrl in aResult:
         i = i + 1
-        oGuiElement = cGuiElement('Episode ' + str(i), SITE_IDENTIFIER, 'showHostersSerie')
+        oGuiElement = cGuiElement('Episode ' + str(i), SITE_IDENTIFIER, 'showHosters')
         oGuiElement.setTVShowTitle(sTVShowTitle)
         oGuiElement.setEpisode(i)
         if sThumbnail:
             oGuiElement.setThumbnail(sThumbnail)
-        params.setParam('entryUrl', 'http://s1.f53mbcg4ak.ru' + sUrl)
+            oGuiElement.setFanart(sThumbnail)
+        if isDesc:
+            oGuiElement.setDescription(sDesc)
+        if 'hdgo' in sUrl:
+            params.setParam('entryUrl', sUrl)
+        else:
+            params.setParam('entryUrl', 'http://s1.f53mbcg4ak.ru' + sUrl)
         oGui.addFolder(oGuiElement, params, False, total)
     oGui.setView('episodes')
     oGui.setEndOfDirectory()
 
 
-def showHostersSerie():
-    sUrl = ParameterHandler().getValue('entryUrl')
-    oRequest = cRequestHandler(sUrl)
-    sHtmlContent = oRequest.request()
-    pattern = "url:[^>]'([^']+)"
-    isMatch, aResult = cParser().parse(sHtmlContent, pattern)
-    hosters = []
-    for sUrl in aResult:
-        q = Qualy(sUrl)
-        hoster = {'link': sUrl, 'name': q}
-        hosters.append(hoster)
-    if hosters:
-        hosters.append('getHosterUrl')
-    return hosters
-
-
 def showHosters():
     sUrl = ParameterHandler().getValue('entryUrl')
     sHtmlContent = cRequestHandler(sUrl).request()
-    sPattern = '<iframe[^>]src="(http[^"]+)'
-    isMatch, aResult = cParser().parse(sHtmlContent, sPattern)
+    if not 's1.f53mbcg4ak.ru' in sUrl:
+        pattern = '<iframe[^>]src="([^"]+)'
+        isMatch, aResult = cParser().parse(sHtmlContent, pattern)
+        if aResult[0].startswith('//'):
+            oRequest = cRequestHandler('http:' + aResult[0])
+        else:
+            oRequest = cRequestHandler(aResult[0])
+        oRequest.addHeaderEntry('Referer', sUrl)
+        sHtmlContent = oRequest.request()
+        pattern = "url:[^>]'([^']+)"
+        isMatch, aResult = cParser().parse(sHtmlContent, pattern)
+        if not isMatch:
+            pattern = '<iframe[^>]src="([^"]+)'
+            isMatch, aResult = cParser().parse(sHtmlContent, pattern)
+            oRequest = cRequestHandler('http:' + aResult[0])
+            oRequest.addHeaderEntry('Referer', sUrl)
+            sHtmlContent = oRequest.request()
+    pattern = "url:[^>]'([^']+)"
+    isMatch, aResult = cParser().parse(sHtmlContent, pattern)
     hosters = []
     if isMatch:
         for sUrl in aResult:
-            oRequest = cRequestHandler(sUrl)
-            oRequest.addHeaderEntry('Referer', sUrl)
-            sHtmlContent = oRequest.request()
-            pattern = '<iframe[^>]src="//([^"]+)'
-            isMatch, sHtmlContent = cParser().parse(sHtmlContent, pattern)
-            oRequest = cRequestHandler('http://' + sHtmlContent[0])
-            oRequest.addHeaderEntry('Referer', sUrl)
-            sHtmlContent = oRequest.request()
-            pattern = "url:[^>]'([^']+)"
-            isMatch, aResult = cParser().parse(sHtmlContent, pattern)
-
-            for sUrl in aResult:
-                q = Qualy(sUrl)
-                hoster = {'link': sUrl, 'name': q}
-                hosters.append(hoster)
+            q = Qualy(sUrl)
+            hoster = {'link': sUrl, 'name': q}
+            hosters.append(hoster)
     if hosters:
         hosters.append('getHosterUrl')
     return hosters
@@ -222,7 +218,6 @@ def showSearch():
 
 
 def _search(oGui, sSearchText):
-    if not sSearchText: return
     showEntries(URL_MAIN, oGui, sSearchText)
 
 
