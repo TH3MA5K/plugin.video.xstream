@@ -164,7 +164,7 @@ def showEpisodes():
 
     total = len(aResult)
     for eID, sID, eNr in aResult:
-        oGuiElement = cGuiElement('Folge ' + eNr , SITE_IDENTIFIER, "showHosters2")
+        oGuiElement = cGuiElement('Folge ' + eNr , SITE_IDENTIFIER, "showHosters")
         oGuiElement.setThumbnail(sThumbnail)
         oGuiElement.setFanart(sThumbnail)
         oGuiElement.setDescription(sDesc)
@@ -173,22 +173,6 @@ def showEpisodes():
         oGui.addFolder(oGuiElement, params, False, total)
     oGui.setView('episodes')
     oGui.setEndOfDirectory()
-
-
-def showHosters2():
-    eID = ParameterHandler().getValue('eID')
-    sID = ParameterHandler().getValue('sID')
-    hosters = []
-    sHtmlContent = cRequestHandler(URL_MAIN + '/movie/load-stream/' + sID + '/' + eID + '?server=1').request()
-
-    pattern = 'file":"([^"]+).*?label":"([^"]+)'
-    isMatch, aResult = cParser().parse(sHtmlContent, pattern)
-    for sUrl, sName in aResult:
-        hoster = {'link': sUrl, 'name': sName}
-        hosters.append(hoster)
-    if hosters:
-        hosters.append('getHosterUrl')
-    return hosters
 
 
 def showHosters():
@@ -200,10 +184,15 @@ def showHosters():
     if isMatch:
         for sID, sUrl in aResult:
             sHtmlContent = cRequestHandler(URL_MAIN + sUrl + sID + '?server=1').request()
-            pattern = 'file":"([^"]+).*?label":"([^"]+)'
+            pattern = 'urlVideo = "([^"]+)'
+            isMatch, sUrl = cParser().parse(sHtmlContent, pattern)
+            sHtmlContent = cRequestHandler(sUrl[0]).request()
+            url = cParser().urlparse(sUrl[0])
+            pattern = 'RESOLUTION=\d+x([\d]+)([^#]+)'
             isMatch, aResult = cParser().parse(sHtmlContent, pattern)
+            
             for sUrl, sName in aResult:
-                hoster = {'link': sUrl, 'name': sName}
+                hoster = {'link': 'http://' + url + sName, 'name': sUrl}
                 hosters.append(hoster)
     if hosters:
         hosters.append('getHosterUrl')
@@ -211,10 +200,7 @@ def showHosters():
 
 
 def getHosterUrl(sUrl=False):
-    if 'googleapis' in sUrl:
-        return [{'streamUrl': sUrl, 'resolved': True}]
-    else:
-        return [{'streamUrl': sUrl, 'resolved': False}]
+    return [{'streamUrl': sUrl, 'resolved': True}]
 
 
 def showSearch():
