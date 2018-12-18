@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from resources.lib.cCFScrape import cCFScrape
 from resources.lib.gui.gui import cGui
 from resources.lib.gui.guiElement import cGuiElement
 from resources.lib.handler.ParameterHandler import ParameterHandler
@@ -10,11 +9,10 @@ SITE_IDENTIFIER = 'foxx_to'
 SITE_NAME = 'Foxx'
 SITE_ICON = 'foxx.png'
 
-URL_MAIN = 'https://foxx.to/'
+URL_MAIN = 'https://foxx.to/eu/'
 URL_FILME = URL_MAIN + 'film'
 URL_SERIE = URL_MAIN + 'serie'
 URL_SEARCH = URL_MAIN + '?s=%s'
-QUALITY_ENUM = {'240p': 0, '360p': 1, '480p': 2, '720p': 3, '1080p': 4, '240': 0, '360': 1, '480': 2, '720': 3, '1080': 4}
 
 
 def load():
@@ -36,12 +34,9 @@ def showGenres():
     pattern = 'Filme</a><ul[^>]*class="sub-menu">.*?</ul></li><li[^>]*id'
     isMatch, sHtmlContainer = cParser.parseSingleResult(sHtmlContent, pattern)
 
-    if not isMatch:
-        oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
-        return
-
-    pattern = '<a[^>]*href="([^"]+)".*?>([^"]+)</a>'
-    isMatch, aResult = cParser.parse(sHtmlContainer, pattern)
+    if isMatch:
+        pattern = '<a[^>]*href="([^"]+)".*?>([^"]+)</a>'
+        isMatch, aResult = cParser.parse(sHtmlContainer, pattern)
 
     if not isMatch:
         oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
@@ -68,12 +63,13 @@ def showEntries(entryUrl=False, sGui=False):
         if not sGui: oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
         return
 
+    cf = cRequestHandler.createUrl(entryUrl, oRequest)
     total = len(aResult)
     for sThumbnail, sName, sDummy, sUrl, sYear, sDesc in aResult:
         isTvshow = True if "serie" in sUrl else False
+        sThumbnail = sThumbnail + cf
         if sThumbnail.startswith('//'):
             sThumbnail = 'https:' + sThumbnail
-        sThumbnail = cCFScrape.createUrl(sThumbnail, oRequest)
         if sUrl.startswith('//'):
             sUrl = 'https:' + sUrl
         oGuiElement = cGuiElement(sName, SITE_IDENTIFIER, 'showSeasons' if isTvshow else 'showHosters')
@@ -89,6 +85,7 @@ def showEntries(entryUrl=False, sGui=False):
         params.setParam('entryUrl', sUrl)
         params.setParam('sName', sName)
         params.setParam('sThumbnail', sThumbnail)
+        params.setParam('sDesc', sDesc)
         oGui.addFolder(oGuiElement, params, isTvshow, total)
 
     if not sGui:
@@ -109,6 +106,7 @@ def showSeasons():
     sUrl = params.getValue('entryUrl')
     sThumbnail = params.getValue('sThumbnail')
     sTVShowTitle = params.getValue('sName')
+    sDesc = params.getValue('sDesc')
     sHtmlContent = cRequestHandler(sUrl).request()
     pattern = '<span[^>]*class="se-t[^"]*"[^>]*>(\d+)</span>'
     isMatch, aResult = cParser.parse(sHtmlContent, pattern)
@@ -125,6 +123,7 @@ def showSeasons():
         oGuiElement.setSeason(sSeasonNr)
         oGuiElement.setThumbnail(sThumbnail)
         oGuiElement.setFanart(sThumbnail)
+        oGuiElement.setDescription(sDesc)
         params.setParam('sSeasonNr', int(sSeasonNr))
         oGui.addFolder(oGuiElement, params, True, total)
     oGui.setView('seasons')
@@ -138,16 +137,13 @@ def showEpisodes():
     entryUrl = params.getValue('entryUrl')
     sSeasonNr = params.getValue('sSeasonNr')
     sThumbnail = params.getValue('sThumbnail')
+    sDesc = params.getValue('sDesc')
     sHtmlContent = cRequestHandler(entryUrl).request()
     pattern = '<span[^>]*class="se-t[^"]*">%s</span>.*?<ul[^>]*class="episodios"[^>]*>(.*?)</ul>' % sSeasonNr
     isMatch, sContainer = cParser.parseSingleResult(sHtmlContent, pattern)
-
-    if not isMatch:
-        oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
-        return
-
-    pattern = '<a[^>]*href="([^"]+)"[^>]*>([^<]+)'
-    isMatch, aResult = cParser.parse(sContainer, pattern)
+    if isMatch:
+        pattern = '<a[^>]*href="([^"]+)"[^>]*>([^<]+)'
+        isMatch, aResult = cParser.parse(sContainer, pattern)
 
     if not isMatch:
         oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
@@ -162,6 +158,7 @@ def showEpisodes():
         oGuiElement.setSeason(sSeasonNr)
         oGuiElement.setThumbnail(sThumbnail)
         oGuiElement.setFanart(sThumbnail)
+        oGuiElement.setDescription(sDesc)
         oGuiElement.setMediaType('episode')
         params.setParam('entryUrl', sUrl.strip())
         oGui.addFolder(oGuiElement, params, False, total)
@@ -182,31 +179,15 @@ def showHosters():
             oRequest = cRequestHandler(hUrl)
             oRequest.addHeaderEntry('Referer', hUrl)
             sHtmlContent = oRequest.request()
-            aResult = cParser().parse(sHtmlContent, "(?:jbdaskgs|m3u8File)[^>]=[^>]'([^']+)")
-            cf = cCFScrape.createUrl(sUrl, oRequest)
-            for sUrl in aResult[1]:
-                if 'downloaded.' in sUrl:
-                    sUrl = 'https://fast.streamservice.online/public/dist/index.html?id=' + sUrl
-                    hoster = {'link': sUrl, 'name': 'play'}
-                    hosters.append(hoster)
-                    continue
-                import base64
-                sUrl = base64.b64decode(sUrl)
-                isMatch, aResult = cParser.parse(sUrl, '"file":"([^"]+).*?label":"([^"]+)')
-                for sUrl, sQuality in aResult:
-                    if 'google' in sUrl:
-                        hoster = {'link': sUrl, 'name': sQuality, 'quality': QUALITY_ENUM[sQuality]}
-                    else:
-                        hoster = {'link': sUrl + cf, 'name': sQuality, 'quality': QUALITY_ENUM[sQuality]}
-                    hosters.append(hoster)
-        if 'wp-embed.php' in hUrl:
-            oRequest = cRequestHandler(hUrl)
-            oRequest.addHeaderEntry('Referer', hUrl)
-            sHtmlContent = oRequest.request()
-            aResult = cParser.parse(sHtmlContent, '<iframe[^>]src="([^"]+)')
-            for sUrl in aResult[1]:
-                isMatch, hname = cParser().parseSingleResult(sUrl, '^(?:https?://)?(?:[^@\n]+@)?([^:/\n]+)')
-                hoster = {'link': sUrl, 'name': hname}
+            isMatch, aResult = cParser().parse(sHtmlContent, "(?:jbdaskgs|m3u8File)[^>]=[^>]'([^']+).*?urlVideo = '([^;]+)'")
+            for sID, sUrl in aResult:
+                sUrl = sUrl.replace("'+m3u8File+'", sID)
+                sHtmlContent = cRequestHandler(sUrl).request()
+                url = cParser().urlparse(sUrl)
+                pattern = 'RESOLUTION=\d+x([\d]+)([^#]+)'
+                isMatch, aResult = cParser().parse(sHtmlContent, pattern)
+            for sUrl, sName in aResult:
+                hoster = {'link': 'http://' + url + sName, 'name': sUrl}
                 hosters.append(hoster)
     if hosters:
         hosters.append('getHosterUrl')
@@ -214,13 +195,10 @@ def showHosters():
 
 
 def getHosterUrl(sUrl=False):
-    if 'foxx' in sUrl or 'google' in sUrl:
-        return [{'streamUrl': sUrl, 'resolved': True}]
-    else:
-        return [{'streamUrl': sUrl, 'resolved': False}]
+    return [{'streamUrl': sUrl, 'resolved': True}]
 
 
-def showSearchEntries(entryUrl=False, sGui=False):
+def showSearchEntries(entryUrl=False, sGui=False, sSearchText=False):
     oGui = sGui if sGui else cGui()
     params = ParameterHandler()
     if not entryUrl: entryUrl = params.getValue('sUrl')
@@ -233,11 +211,14 @@ def showSearchEntries(entryUrl=False, sGui=False):
         if not sGui: oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
         return
 
+    cf = cRequestHandler.createUrl(entryUrl, oRequest)
     total = len(aResult)
     for sUrl, sThumbnail, sName, sYear, sDummy, sDesc in aResult:
+        if sSearchText and not cParser().search(sSearchText, sName):
+            continue
         if sThumbnail and not sThumbnail.startswith('http'):
             sThumbnail = 'https:' + sThumbnail
-        sThumbnail = cCFScrape.createUrl(sThumbnail, oRequest)
+        sThumbnail = sThumbnail + cf
         if sUrl.startswith('//'):
             sUrl = 'https:' + sUrl
         isTvshow = True if "serie" in sUrl else False
@@ -254,8 +235,8 @@ def showSearchEntries(entryUrl=False, sGui=False):
         params.setParam('entryUrl', sUrl)
         params.setParam('sName', sName)
         params.setParam('sThumbnail', sThumbnail)
+        params.setParam('sDesc', sDesc)
         oGui.addFolder(oGuiElement, params, isTvshow, total)
-
     if not sGui:
         pattern = "span[^>]*class=[^>]*current[^>]*>.*?</span><a[^>]*href='([^']+)"
         isMatchNextPage, sNextUrl = cParser.parseSingleResult(sHtmlContent, pattern)
@@ -276,5 +257,4 @@ def showSearch():
 
 
 def _search(oGui, sSearchText):
-    if not sSearchText: return
-    showSearchEntries(URL_SEARCH % sSearchText.strip(), oGui)
+    showSearchEntries(URL_SEARCH % sSearchText, oGui, sSearchText)
