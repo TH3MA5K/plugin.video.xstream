@@ -185,14 +185,17 @@ def showHosters():
         for sID, sUrl in aResult:
             sHtmlContent = cRequestHandler(URL_MAIN + sUrl + sID + '?server=1').request()
             pattern = 'urlVideo = "([^"]+)'
-            isMatch, sUrl = cParser().parse(sHtmlContent, pattern)
-            sHtmlContent = cRequestHandler(sUrl[0]).request()
-            url = cParser().urlparse(sUrl[0])
+            isMatch, hUrl = cParser().parse(sHtmlContent, pattern)
+            sHtmlContent = cRequestHandler(hUrl[0]).request()
+            url = cParser().urlparse(hUrl[0])
             pattern = 'RESOLUTION=\d+x([\d]+)([^#]+)'
             isMatch, aResult = cParser().parse(sHtmlContent, pattern)
             
-            for sUrl, sName in aResult:
-                hoster = {'link': 'http://' + url + sName, 'name': sUrl}
+            for sQualy, sUrl in aResult:
+                if 'hydrax' in hUrl[0]:
+                    hoster = {'link': hUrl[0].replace('playlist.m3u8', '') + sUrl, 'name': sQualy}
+                else:
+                    hoster = {'link': 'http://' + url + sUrl, 'name': sQualy}
                 hosters.append(hoster)
     if hosters:
         hosters.append('getHosterUrl')
@@ -200,6 +203,8 @@ def showHosters():
 
 
 def getHosterUrl(sUrl=False):
+    if 'hydrax' in sUrl:
+        sUrl = sUrl + '|' + 'Origin=https%3A%2F%2Fhdfilme.net%2F&Accept-Language=de-de,de;q=0.8,en-us;q=0.5,en;q=0.3&Accept-Encoding=gzip&Referer=https%3A%2F%2Fhdfilme.net%2F'
     return [{'streamUrl': sUrl, 'resolved': True}]
 
 
