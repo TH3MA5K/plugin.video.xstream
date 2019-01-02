@@ -2,11 +2,17 @@
 import urllib
 import os
 import json
-import zipfile
 import logger
 import xbmc
 from resources.lib.common import addonPath, profilePath
 from resources.lib.download import cDownload
+
+## Android K18 ZIP Fix.
+if xbmc.getCondVisibility('system.platform.android') and int(xbmc.getInfoLabel('System.BuildVersion')[:2]) >= 18:
+    import fixetzipfile as zipfile
+else:
+    import zipfile
+
 
 ## Installation path.
 ROOT_DIR = addonPath
