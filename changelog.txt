@@ -1,4 +1,7 @@
-xStream 3.5.4~nightly
+xStream 3.5.5~nightly
+
+xStream 3.5.4
+  02.01.2019
 - [SerienStream] Add Popular and code cleanup
 - [kino.cx] fix Hoster
 - [autoupdate] Android K18 ZIP Fix
