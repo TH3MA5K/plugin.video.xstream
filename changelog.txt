@@ -1,5 +1,6 @@
 xStream 3.5.4~nightly
-- [HDfilme] fix Hoster
+- [kino.cx] fix Hoster
+- [autoupdate] Android K18 ZIP Fix
 - [HDfilme] fix Hoster
 - [Foxx.to] Fix Hoster
 - [cinemaxx.cc] fix episodes usw.
