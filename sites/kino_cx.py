@@ -93,7 +93,7 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=False):
 def showHosters():
     sUrl = ParameterHandler().getValue('entryUrl')
     sHtmlContent = cRequestHandler(sUrl).request()
-    pattern = 'data-type="([^"]+).*?data-post="([\d]+)[^>]*data-nume="([\d]+)">.*?server">([^<]+).*?src=[^>]([^>]+)'
+    pattern = "data-type='([^']+).*?data-post='([\d]+)[^>]*data-nume='([\d]+)'>.*?server'>([^<]+).*?src=[^>]([^>]+)"
     isMatch, aResult = cParser().parse(sHtmlContent, pattern)
     hosters = []
     if isMatch:
