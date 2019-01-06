@@ -24,6 +24,8 @@
    <news>
    xStream 3.5.5~nightly
 - [gui] code cleanup
+- [HDfilme] fix
+- [TMovie] fix Serien
    </news>
    <assets>
      <icon>icon.png</icon>
