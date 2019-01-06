@@ -92,7 +92,7 @@ def showEpisodes():
     entryUrl = params.getValue('entryUrl')
     sThumbnail = params.getValue('sThumbnail')
     sHtmlContent = cRequestHandler(entryUrl).request()
-    pattern = '<ul[^>]class="list-group">.*?<div[^>]style="clear'
+    pattern = 'class="list-group">.*?<div[^>]style="clear'
     isMatch, sContainer = cParser.parseSingleResult(sHtmlContent, pattern)
 
     if isMatch:
