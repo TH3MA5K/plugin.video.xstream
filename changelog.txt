@@ -2,6 +2,7 @@ xStream 3.5.5~nightly
 - [gui] code cleanup
 - [HDfilme] fix
 - [TMovie] fix Serien
+- Homepagelink aktualisiert
 
 xStream 3.5.4
   02.01.2019
