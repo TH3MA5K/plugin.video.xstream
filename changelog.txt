@@ -1,4 +1,6 @@
 xStream 3.5.5~nightly
+- [szene-streamz.com] remove offline site
+- [view4u.co] remove offline site
 - [streamking] add Site
 - [gui] code cleanup
 - [HDfilme] fix
