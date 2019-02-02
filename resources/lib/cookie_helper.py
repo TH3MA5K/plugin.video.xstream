@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import sys, cookielib
+import cookielib
 
 #from kennethreitz module "requests"
 def create_cookie(name, value, **kwargs):
@@ -26,7 +26,6 @@ def create_cookie(name, value, **kwargs):
     if badargs:
         err = 'create_cookie() got unexpected keyword arguments: %s'
         raise TypeError(err % list(badargs))
-
     result.update(kwargs)
     result['port_specified'] = bool(result['port'])
     result['domain_specified'] = bool(result['domain'])
@@ -37,5 +36,5 @@ def create_cookie(name, value, **kwargs):
 
 def check_cookies(cookie_jar):
     for entry in cookie_jar:
-        if entry.expires > sys.maxint:
-            entry.expires = sys.maxint
+        if entry.expires > 2**32-1:
+            entry.expires = 2**32-1
