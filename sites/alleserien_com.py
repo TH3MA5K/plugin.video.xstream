@@ -7,7 +7,7 @@ from resources.lib.handler.requestHandler import cRequestHandler
 from resources.lib.parser import cParser
 
 SITE_IDENTIFIER = 'alleserien_com'
-SITE_NAME = 'Alleserien.com'
+SITE_NAME = 'Alleserien'
 SITE_ICON = 'alleserien_com.png'
 
 URL_MAIN = 'http://alleserien.com'
@@ -33,13 +33,12 @@ def load():
 def showContentMenu():
     oGui = cGui()
     params = ParameterHandler()
-    params.setParam('sortBy', 'name')
-    oGui.addFolder(cGuiElement('Sortiert nach Name', SITE_IDENTIFIER, 'showEntries'), params)
-    params.setParam('sortBy', 'best')
-    oGui.addFolder(cGuiElement('Am besten bewertet', SITE_IDENTIFIER, 'showEntries'), params)
     params.setParam('sortBy', 'latest')
     oGui.addFolder(cGuiElement('Neueste Release', SITE_IDENTIFIER, 'showEntries'), params)
+    params.setParam('sortBy', 'best')
+    oGui.addFolder(cGuiElement('Am besten bewertet', SITE_IDENTIFIER, 'showEntries'), params)
     params.setParam('sortBy', 'name')
+    oGui.addFolder(cGuiElement('Sortiert nach Name', SITE_IDENTIFIER, 'showEntries'), params)
     oGui.addFolder(cGuiElement('Genre', SITE_IDENTIFIER, 'showGenre'))
     oGui.setEndOfDirectory()
 
@@ -73,10 +72,10 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=False):
     sortBy = params.getValue('sortBy')
     page = params.getValue('page')
     type = params.getValue('type')
-    sHtmlContent = cRequestHandler(entryUrl).request()
+    sHtmlContent = cRequestHandler(entryUrl, ignoreErrors=(sGui is not False)).request()
     isMatch, url = cParser.parseSingleResult(sHtmlContent, "url : '([^']+)")
     isMatch, token = cParser.parseSingleResult(sHtmlContent, "token':'([^']+)")
-    oRequest = cRequestHandler(url)
+    oRequest = cRequestHandler(url, ignoreErrors=(sGui is not False))
     if sSearchText:
         oRequest.addParameters('search', sSearchText)
         page = '1'
@@ -189,42 +188,35 @@ def showEpisodes():
 
 def showHosters():
     sUrl = ParameterHandler().getValue('entryUrl')
-    sHtmlContent = cRequestHandler(sUrl).request()
-    pattern = '"partItem" data-id="([\d]+).*?data-controlid="([\d]+)">.*?image/(.*?).png'
+    sHtmlContent = cRequestHandler(sUrl, ignoreErrors=True).request()
+    pattern = '<iframe[^>]src="([^"]+)'
     isMatch, aResult = cParser().parse(sHtmlContent, pattern)
-    result, sHoster = cParser().parseSingleResult(sHtmlContent, 'controlid.*?url:[^>]"([^"]+)')
-    result, token = cParser().parseSingleResult(sHtmlContent, "controlid.*?_token':'([^']+)")
     hosters = []
     if isMatch:
-        for ID, controlid, sName in aResult:
-            request = cRequestHandler(sHoster)
-            request.addParameters('_token', token)
-            request.addParameters('PartID', ID)
-            request.addParameters('ControlID', controlid)
-            request.setRequestType(1)
-            sHtmlContent = request.request()
-            result, link = cParser().parseSingleResult(sHtmlContent, 'src="([^"]+)')
-            hoster = {'link': link, 'name': sName}
-            hosters.append(hoster)
+        if 'alleserien' in aResult[0]:
+            result, hash = cParser().parseSingleResult(sHtmlContent, 'o/([^"]+)')
+            oRequest = cRequestHandler(aResult[0] + '?do=getVideo')
+            oRequest.addHeaderEntry('Referer', ParameterHandler().getValue('entryUrl'))
+            oRequest.addHeaderEntry('Origin', 'http://alleserienplayer.com')
+            oRequest.addHeaderEntry('Host', 'alleserienplayer.com')
+            oRequest.addHeaderEntry('X-Requested-With', 'XMLHttpRequest')
+            oRequest.addParameters('do', 'getVideo')
+            oRequest.addParameters('hash', hash[0])
+            oRequest.addParameters('r', ParameterHandler().getValue('entryUrl'))
+            oRequest.setRequestType(1)
+            sHtmlContent = oRequest.request()
+            isMatch, aResult = cParser().parse(sHtmlContent, 'file":"([^"]+).*?label":"([^"]+)')
+            if isMatch:
+                for sUrl, sName in aResult:
+                    hoster = {'link': sUrl, 'name': sName}
+                    hosters.append(hoster)
     if hosters:
         hosters.append('getHosterUrl')
     return hosters
 
 
 def getHosterUrl(sUrl=False):
-    if 'alleserien' in sUrl:
-        request = cRequestHandler(sUrl)
-        request.addHeaderEntry('Referer', ParameterHandler().getValue('entryUrl'))
-        request.addHeaderEntry('Host', 'www.alleserienplayer.com')
-        request.addHeaderEntry('Upgrade-Insecure-Requests', '1')
-        sHtmlContent = request.request()
-        pattern = 'file":"([^"]+)'
-        isMatch, sUrl = cParser().parse(sHtmlContent, pattern)
-        if not isMatch:
-            return
-        return [{'streamUrl': sUrl[0], 'resolved': False}]
-    else:
-        return [{'streamUrl': sUrl, 'resolved': False}]
+    return [{'streamUrl': sUrl, 'resolved': False}]
 
 
 def showSearch():
