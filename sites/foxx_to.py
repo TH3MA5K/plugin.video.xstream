@@ -56,7 +56,7 @@ def showEntries(entryUrl=False, sGui=False):
     if not entryUrl: entryUrl = params.getValue('sUrl')
     oRequest = cRequestHandler(entryUrl, ignoreErrors=(sGui is not False))
     sHtmlContent = oRequest.request()
-    pattern = '<div[^>]*class="poster"><img[^>]src="([^"]+)"[^>]alt="([^"]+).*?(.*?)<a[^>]href="([^"]+).*?<span>([\d]+)</span>.*?<div[^>]class="texto">([^"]+)</div>'
+    pattern = '<div[^>]*class="poster">.*?img[^>]src="([^"]+)"[^>]alt="([^"]+).*?(.*?)<a[^>]href="([^"]+).*?<span>([\d]+)</span>.*?<div[^>]class="texto">([^"]+)</div>'
     isMatch, aResult = cParser.parse(sHtmlContent, pattern)
 
     if not isMatch:
