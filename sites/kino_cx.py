@@ -30,11 +30,11 @@ def showGenres():
     params = ParameterHandler()
     sHtmlContent = cRequestHandler(URL_MAIN).request()
     pattern = '<nav[^>]class="genres">.*?</ul>'
-    isMatch, sHtmlContainer = cParser.parseSingleResult(sHtmlContent, pattern)
+    isMatch, sContainer = cParser.parseSingleResult(sHtmlContent, pattern)
 
     if  isMatch:
         pattern = '<a[^>]*href="([^"]+)".*?>([^"]+)</a>'
-        isMatch, aResult = cParser.parse(sHtmlContainer, pattern)
+        isMatch, aResult = cParser.parse(sContainer, pattern)
 
     if not isMatch:
         oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
@@ -56,24 +56,25 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=False):
         pattern = 'search-page.*?<div[^>]class="sidebar[^>]scrolling">'
     else:
         pattern = 'class="item movies">.*?<div[^>]class="sidebar[^>]scrolling">'
-    isMatch, sHtmlContainer = cParser.parseSingleResult(sHtmlContent, pattern)
+    isMatch, sContainer = cParser.parseSingleResult(sHtmlContent, pattern)
 
     if isMatch:
         if sSearchText is not False:
             pattern = '<img[^>]src="([^"]+).*?<a[^>]href="([^"]+)">([^<]+).*?year">([\d]+)'
         else:
             pattern = '<img[^>]src="([^"]+).*?<h3><a[^>]href="([^"]+)">([^<]+)</a></h3>[^>]<span>([\d]+)'
-        isMatch, aResult = cParser.parse(sHtmlContainer, pattern)
+        isMatch, aResult = cParser.parse(sContainer, pattern)
 
     if not isMatch:
         if not sGui: oGui.showInfo('xStream', 'Es wurde kein Eintrag gefunden')
         return
 
+    cf = cRequestHandler.createUrl(entryUrl, oRequest)
     total = len(aResult)
     for sThumbnail, sUrl, sName, sYear in aResult:
         if sSearchText and not cParser().search(sSearchText, sName):
             continue
-        sThumbnail = cParser.replace('-\d+x\d+\.', '.', sThumbnail)
+        sThumbnail = cParser.replace('-\d+x\d+\.', '.', sThumbnail) + cf
         oGuiElement = cGuiElement(sName, SITE_IDENTIFIER, 'showHosters')
         oGuiElement.setThumbnail(sThumbnail)
         oGuiElement.setFanart(sThumbnail)
@@ -112,24 +113,29 @@ def showHosters():
             oRequest.setRequestType(1)
             sHtmlContent = oRequest.request()
             isMatch, aResult = cParser().parse(sHtmlContent, "src=[^>]([^']+)")
-            for sUrl in aResult:
-                hoster = {'link': sUrl, 'name': sName + lang}
-                hosters.append(hoster)
+            if 'mystream' in aResult[0]:
+                isMatch, aResult = cParser().parse(aResult[0], "v/([^/]+)")
+                oRequest = cRequestHandler('https://www.mystream.cz/api/source/' + aResult[0])
+                oRequest.addParameters('r', 'https://kino.cx/')
+                oRequest.addParameters('d', 'www.mystream.cz')
+                oRequest.setRequestType(1)
+                sHtmlContent = oRequest.request()
+                isMatch, aResult = cParser().parse(sHtmlContent, 'file":"([^"]+)","label":"([^"]+)')
+                for sUrl, q in aResult:
+                    hoster = {'link': sUrl, 'name': sName + ' ' + q + lang}
+                    hosters.append(hoster)
+            else:
+                for sUrl in aResult:
+                    hoster = {'link': sUrl, 'name': sName + lang}
+                    hosters.append(hoster)
     if hosters:
         hosters.append('getHosterUrl')
     return hosters
 
 
 def getHosterUrl(sUrl=False):
-    if 'gounlimited' in sUrl:
-        sHtmlContent = cRequestHandler(sUrl).request()
-        isMatch, aResult = cParser().parse(sHtmlContent, "(eval\(function.*?)</script>")
-        if isMatch:
-            from resources.lib import jsunpacker
-            unpacked = jsunpacker.unpack(aResult[1])
-            isMatch, sUrl = cParser.parseSingleResult(unpacked, 'sources[^>][^>]"([^"]+)')
-        if isMatch:
-            return [{'streamUrl': sUrl, 'resolved': True}]
+    if 'fvs.io' in sUrl:
+        return [{'streamUrl': sUrl, 'resolved': True}]
     else:
         return [{'streamUrl': sUrl, 'resolved': False}]
 
