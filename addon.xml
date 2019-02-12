@@ -20,6 +20,7 @@
    <platform>all</platform>
    <news>
    xStream 3.5.6~nightly
+- [kino.cx] add mystream hoster support
 - [Foxx.to] Fix regex
 - [Alleserien] Fix Hoster    
 - Update cookies_helper.py
