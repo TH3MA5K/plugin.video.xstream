@@ -1,4 +1,7 @@
 xStream 3.5.6~nightly
+- [cinenator] site offline
+- [kinox.one] no streams
+- [movie2k.ag] recaptcha
 - [kino.cx] add mystream hoster support
 - [Foxx.to] Fix regex
 - [Alleserien] Fix Hoster
