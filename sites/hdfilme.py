@@ -168,11 +168,16 @@ def showEpisodes():
 def showHosterserie():
     eID = ParameterHandler().getValue('eID')
     sID = ParameterHandler().getValue('sID')
+    rUrl = ParameterHandler().getValue('entryUrl')
     hosters = []
-    sHtmlContent = cRequestHandler(URL_MAIN + '/movie/load-stream/' + sID + '/' + eID +  '?server=1').request()
+    oRequest = cRequestHandler(URL_MAIN + '/movie/load-stream/' + sID + '/' + eID +  '?server=1')
+    oRequest.addHeaderEntry('X-Requested-With', 'XMLHttpRequest')
+    oRequest.addHeaderEntry('Referer', rUrl)
+    sHtmlContent = oRequest.request()
     pattern = 'urlVideo = "([^"]+)'
     isMatch, hUrl = cParser().parse(sHtmlContent, pattern)
-    sHtmlContent = cRequestHandler(hUrl[0]).request()
+    oRequest = cRequestHandler(hUrl[0])
+    sHtmlContent = oRequest.request()
     url = cParser().urlparse(hUrl[0])
     pattern = 'RESOLUTION=\d+x([\d]+)([^#]+)'
     isMatch, aResult = cParser().parse(sHtmlContent, pattern)
@@ -188,13 +193,17 @@ def showHosterserie():
 
 def showHosters():
     sUrl = urlEncode(ParameterHandler().getValue('entryUrl'),':|/')
+    rUrl = ParameterHandler().getValue('entryUrl')
     sHtmlContent = cRequestHandler(sUrl).request()
     pattern = 'data-episode-id="([^"]+).*?load[^>] "([^"]+)"'
     isMatch, aResult = cParser().parse(sHtmlContent, pattern)
     hosters = []
     if isMatch:
         for sID, sUrl in aResult:
-            sHtmlContent = cRequestHandler(URL_MAIN + sUrl + sID + '?server=1').request()
+            oRequest = cRequestHandler(URL_MAIN + sUrl + sID + '?server=1')
+            oRequest.addHeaderEntry('X-Requested-With', 'XMLHttpRequest')
+            oRequest.addHeaderEntry('Referer', rUrl)
+            sHtmlContent = oRequest.request()
             pattern = 'urlVideo = "([^"]+)'
             isMatch, hUrl = cParser().parse(sHtmlContent, pattern)
             sHtmlContent = cRequestHandler(hUrl[0]).request()
