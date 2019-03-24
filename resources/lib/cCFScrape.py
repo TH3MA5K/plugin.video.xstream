@@ -68,7 +68,6 @@ class cCFScrape:
         request = urllib2.Request(url)
         for key in headers:
             request.add_header(key, headers[key])
-
         try:
             response = opener.open(request)
         except urllib2.HTTPError as e:
@@ -87,6 +86,7 @@ class cCFScrape:
         try:
             params["jschl_vc"] = re.search(r'name="jschl_vc" value="(\w+)"', body).group(1)
             params["pass"] = re.search(r'name="pass" value="(.+?)"', body).group(1)
+            params["s"] = re.search(r'name="s"\svalue="(?P<s_value>[^"]+)', body).group(1)
             js = self._extract_js(body, parsed_url.netloc)
         except:
             return None
