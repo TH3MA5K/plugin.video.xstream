@@ -1,5 +1,8 @@
 xStream 3.5.7~nightly
 - [cinematrix.to] remove offline site
+- [kinostern.com] remove offline site
+- [movies.gg] remove offline site
+- [tmovie.to] remove offline site
 - fix cloudflare
 - [hdfilme] fix hoster
 
