@@ -20,6 +20,9 @@
    <platform>all</platform>
    <news>
    xStream 3.5.7~nightly
+- [kinostern.com] remove offline site
+- [movies.gg] remove offline site
+- [tmovie.to] remove offline site
 - [cinematrix.to] remove offline site
 - fix cloudflare
 - [hdfilme] fix hoster
