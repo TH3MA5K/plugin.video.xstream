@@ -1,4 +1,5 @@
 xStream 3.5.7~nightly
+- [MovieDream] Fix Genre
 - [cinematrix.to] remove offline site
 - [kinostern.com] remove offline site
 - [movies.gg] remove offline site
