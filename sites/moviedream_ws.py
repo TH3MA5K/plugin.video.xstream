@@ -95,7 +95,7 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=False):
         oGuiElement.setThumbnail(sThumbnail)
         oGuiElement.setFanart(sThumbnail)
         oGuiElement.setMediaType("tvshow" if isTvshow else "movie")
-        params.setParam('entryUrl', URL_MAIN + sUrl)
+        params.setParam('entryUrl', URL_MAIN + sUrl.replace('../..',''))
         params.setParam('Name', sName)
         params.setParam('sThumbnail', sThumbnail)
         params.setParam('isTvshow', isTvshow)
