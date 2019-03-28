@@ -94,7 +94,7 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=False):
         params.setParam('entryUrl', sUrl)
         oGui.addFolder(oGuiElement, params, isTvshow, total)
     if not sGui:
-        isMatchNextPage, sNextUrl = cParser().parseSingleResult(sHtmlContent, '<a[^>]href="([^"]+)">vorwärts')
+        isMatchNextPage, sNextUrl = cParser().parseSingleResult(sHtmlContent, '<a[^>]href="([^"]+)">vorw')
         if isMatchNextPage:
             params.setParam('sUrl', sNextUrl)
             oGui.addNextPage(SITE_IDENTIFIER, 'showEntries', params)
