@@ -94,7 +94,7 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=False):
         params.setParam('entryUrl', sUrl)
         oGui.addFolder(oGuiElement, params, isTvshow, total)
     if not sGui:
-        isMatchNextPage, sNextUrl = cParser().parseSingleResult(sHtmlContent, '<a[^>]href="([^"]+)">vorwärts')
+        isMatchNextPage, sNextUrl = cParser().parseSingleResult(sHtmlContent, '<a[^>]href="([^"]+)">vorwÃ¤rts')
         if isMatchNextPage:
             params.setParam('sUrl', sNextUrl)
             oGui.addNextPage(SITE_IDENTIFIER, 'showEntries', params)
@@ -173,17 +173,11 @@ def showHostersSerie():
     oRequest = cRequestHandler(sUrl)
     oRequest.addHeaderEntry('Referer', sUrl)
     sHtmlContent = oRequest.request()
-    pattern = '<iframe[^>]src="//([^"]+)'
-    isMatch, sHtmlContent = cParser().parse(sHtmlContent, pattern)
-    oRequest = cRequestHandler('http://' + sHtmlContent[0])
-    oRequest.addHeaderEntry('Referer', sUrl)
-    sHtmlContent = oRequest.request()
     pattern = "url:[^>]'([^']+)"
     isMatch, aResult = cParser().parse(sHtmlContent, pattern)
     hosters = []
     for sUrl in aResult:
-        q = Qualy(sUrl)
-        hoster = {'link': sUrl + '|Referer=' + sUrl, 'name': 'hdgo.cc' + q}
+        hoster = {'link': sUrl, 'name': Qualy(sUrl)}
         hosters.append(hoster)
     if hosters:
         hosters.append('getHosterUrl')
@@ -193,42 +187,23 @@ def showHostersSerie():
 def showHosters():
     sUrl = ParameterHandler().getValue('entryUrl')
     sHtmlContent = cRequestHandler(sUrl).request()
-    sPattern = '''(hdgo.show[^>].*?|<iframe[^>]src=")(http[^"']+)'''
-    isMatch, aResult = cParser().parse(sHtmlContent, sPattern)
+    pattern = '<iframe[^>]src="([^"]+)'
+    isMatch, aResult = cParser().parse(sHtmlContent, pattern)
     hosters = []
     if isMatch:
-        for dummy, sUrl in aResult:
-            if 'hdgo.cc' in sUrl:
-                oRequest = cRequestHandler(sUrl)
-                oRequest.addHeaderEntry('Referer', sUrl)
-                sHtmlContent = oRequest.request()
-                pattern = '<iframe[^>]src="//([^"]+)'
-                isMatch, sHtmlContent = cParser().parse(sHtmlContent, pattern)
-                oRequest = cRequestHandler('http://' + sHtmlContent[0])
+        for sUrl in aResult:
+            if 'vio.to' in sUrl:
+                oRequest = cRequestHandler('http:' + sUrl)
                 oRequest.addHeaderEntry('Referer', sUrl)
                 sHtmlContent = oRequest.request()
                 pattern = "url:[^>]'([^']+)"
                 isMatch, aResult = cParser().parse(sHtmlContent, pattern)
-
                 for sUrl in aResult:
-                    q = Qualy(sUrl)
-                    hoster = {'link': sUrl, 'name': 'hdgo.cc' + q}
+                    hoster = {'link': sUrl, 'name': Qualy(sUrl)}
                     hosters.append(hoster)
-
-            elif 'getvi.tv' in sUrl:
-                oRequest = cRequestHandler(sUrl)
-                oRequest.addHeaderEntry('Referer', sUrl)
-                sHtmlContent = oRequest.request()
-                pattern = '''\[([0-9p]+)\](http(?:[^'",]+))'''
-                isMatch, aResult = cParser().parse(sHtmlContent, pattern)
-
-                for sQualy, sUrl in aResult:
-                    hoster = {'link': sUrl, 'name': 'getvi.tv ' + sQualy}
-                    hosters.append(hoster)
-            else:
-                sName = cParser.urlparse(sUrl)
-                hoster = {'link': sUrl, 'name': sName}
-                hosters.append(hoster)
+        else:
+            hoster = {'link': sUrl, 'name': cParser().urlparse(sUrl)}
+            hosters.append(hoster)
     if hosters:
         hosters.append('getHosterUrl')
     return hosters
@@ -237,7 +212,10 @@ def showHosters():
 def getHosterUrl(sUrl=False):
     if sUrl.startswith('//'):
         sUrl = 'https:' + sUrl
-    return [{'streamUrl': sUrl + '|Referer=' + sUrl + '&User-Agent=Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0', 'resolved': True}]
+    if 'apollostream' in sUrl:
+        return [{'streamUrl': sUrl + '|Referer=' + sUrl + '&User-Agent=Mozilla/5.0 (Windows NT 6.3; rv:36.0) Gecko/20100101 Firefox/36.0', 'resolved': True}]
+    else:
+        return [{'streamUrl': sUrl , 'resolved': False}]
 
 
 def showSearch():
