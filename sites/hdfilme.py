@@ -95,7 +95,7 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=False):
     isMatch, sContainer = cParser.parseSingleResult(sHtmlContent, pattern)
 
     if isMatch:
-        pattern = '<div class="box-product clearfix" data-popover.*?href="([^"]+).*?img" src="([^"]+).*?alt="([^"]+)'
+        pattern = '<div class="box-product clearfix" data-popover.*?href="([^"]+).*?data-src="([^"]+).*?alt="([^"]+)'
         isMatch, aResult = cParser.parse(sContainer, pattern)
 
     if not isMatch:
