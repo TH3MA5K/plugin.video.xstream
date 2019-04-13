@@ -77,7 +77,7 @@ def showEntries(entryUrl=False, sGui=False, sSearchText=False):
         sBaseUrl = entryUrl
     oRequest = cRequestHandler(entryUrl, ignoreErrors=(sGui is not False))
     sHtmlContent = oRequest.request()
-    pattern = 'class="linkto.*?href="([^"]+).*?src="([^"]+)">([^<]+)'
+    pattern = 'class="linkto.*?href="([^"]+).*?src="([^"]+).*?>([^>]+)</div>'
     isMatch, aResult = cParser.parse(sHtmlContent, pattern)
 
     if not isMatch:
@@ -122,7 +122,7 @@ def showSeasons():
     pattern += 'imdbid\s*:\s*"(\d+)".*?'
     pattern += 'language\s*:\s*"([^"]+)"'
     isMatch, aResult = cParser.parse(sHtmlContent, pattern)
-    isDesc, sDesc = cParser.parse(sHtmlContent, '">([^<]+)</p>')
+    isDesc, sDesc = cParser.parse(sHtmlContent, '<p style.*?;">([^"]+)</p>')
 
     total = len(aResult)
     for sSeason, imdbid, slanguage in aResult:
@@ -133,6 +133,7 @@ def showSeasons():
         if isDesc:
             oGuiElement.setDescription(sDesc[0])
         oGuiElement.setThumbnail(params.getValue('sThumbnail'))
+        oGuiElement.setFanart(params.getValue('sThumbnail'))
         params.setParam('Season', sSeason)
         params.setParam('imdbid', imdbid)
         params.setParam('language', slanguage)
@@ -145,7 +146,6 @@ def showEpisodes():
     oGui = cGui()
     params = ParameterHandler()
     entryUrl = params.getValue('entryUrl')
-    sThumbnail = params.getValue('sThumbnail')
     sTVShowTitle = params.getValue('Name')
     oRequest = cRequestHandler(EPISODE_URL)
     oRequest.addHeaderEntry("X-Requested-With", "XMLHttpRequest")
@@ -162,7 +162,7 @@ def showEpisodes():
         return
 
     sHtmlContent = cRequestHandler(entryUrl).request()
-    isDesc, sDesc = cParser.parse(sHtmlContent, '">([^<]+)</p>')
+    isDesc, sDesc = cParser.parse(sHtmlContent, '<p style.*?;">([^"]+)</p>')
 
     total = len(aResult)
     for sEpisode, imdbid, slanguage, sSeason in aResult:
@@ -174,7 +174,8 @@ def showEpisodes():
         oGuiElement.setTVShowTitle(sTVShowTitle)
         if isDesc:
             oGuiElement.setDescription(sDesc[0])
-        oGuiElement.setThumbnail(sThumbnail)
+        oGuiElement.setThumbnail(params.getValue('sThumbnail'))
+        oGuiElement.setFanart(params.getValue('sThumbnail'))
         params.setParam('Episode', sEpisode)
         params.setParam('Season', sSeason)
         params.setParam('imdbid', imdbid)
